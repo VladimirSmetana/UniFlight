@@ -130,15 +130,61 @@ if __name__ == "__main__":
     w_femap = [11.86, 32.51, 60.66, 86.75, 124.37]
     colors = ['b', 'r', 'm']
 
-    for i in range(0, 10, 20, 30, 40, 50, 60, 70, 80, 90):
-        f_stiffness[i] = calculate_form(i)
-        print("w["+str(i)+"] = " + str((w_calc[i])) + " / " + str((w_femap[i])) + " -> " + str(abs(m.floor((w_calc[i] - w_femap[i]) * 100 /w_femap[i]))) +" %")
-        plt.plot(numeric, f_stiffness[i], color = colors[i], label = [f'{i+1} Тон - {round(w_calc[i], 2)} Hz'])
+    altitude_list = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+    density = []
+    temperature = []
+    gravity = []
+    pressure = []
+    speed_of_sound = []
+    atomic_speed = []
 
-        plt.title('Расчет форм и частот колебаний', fontsize=16)
-        plt.xlabel('Длина РН, м', fontsize=14)
-        plt.ylabel('Форма', fontsize=14)
-        plt.grid(True)
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
+    for altitude in altitude_list:
+        atm = Init(altitude*1000)
+        density.append(atm.get_density())
+        temperature.append(atm.get_T())
+        gravity.append(atm.get_AOG())
+        pressure.append(atm.get_pressure())
+        speed_of_sound.append(atm.get_SV())
+        atomic_speed.append(atm.get_n())
+
+
+    fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(10, 8))
+
+    axes[0,0].plot(altitude_list, density, color = 'b')
+    axes[0,0].set_title('Плотность воздуха', fontsize=10)
+    axes[0,0].grid()
+
+    axes[0,1].plot(altitude_list, temperature, color = 'r')
+    axes[0,1].set_title('Температура', fontsize=10)
+    axes[0,1].grid()
+
+    axes[1,0].plot(altitude_list, gravity, color = 'g')
+    axes[1,0].set_title('Ускорение свободного падения', fontsize=10)
+    axes[1,0].grid()
+
+    axes[1,1].plot(altitude_list, pressure, color = 'm')
+    axes[1,1].set_title('Давление', fontsize=10)
+    axes[1,1].grid() 
+
+    axes[0,2].plot(altitude_list, speed_of_sound, color = 'g')
+    axes[0,2].set_title('Скорость звука', fontsize=10)
+    axes[0,2].grid()
+
+    axes[1,2].plot(altitude_list, atomic_speed, color = 'c')
+    axes[1,2].set_title('Скорость частиц воздуха', fontsize=10)
+    axes[1,2].grid()
+
+    # axes[0,0].xlabel('Высота, км', fontsize=14)
+    # axes[0,0].ylabel('Плотность, кг/м3', fontsize=14)
+
+    
+    
+    
+    plt.show()
+
+        # plt.xlabel('Длина РН, м', fontsize=14)
+        # plt.ylabel('Форма', fontsize=14)
+        # plt.grid(True)
+        # plt.legend()
+        # plt.tight_layout()
+        # plt.show()
