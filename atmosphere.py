@@ -1,4 +1,5 @@
 import math
+import matplotlib.pyplot as plt
 
 class Init:
     def __init__(self, H):
@@ -125,3 +126,19 @@ if __name__ == "__main__":
     print("Density (kg/m³):", atm.get_density())
     print("Gravity (m/s²):", atm.get_AOG())
     print("Speed of sound (m/s):", atm.get_SV())
+
+    w_femap = [11.86, 32.51, 60.66, 86.75, 124.37]
+    colors = ['b', 'r', 'm']
+
+    for i in range(0, 10, 20, 30, 40, 50, 60, 70, 80, 90):
+        f_stiffness[i] = calculate_form(i)
+        print("w["+str(i)+"] = " + str((w_calc[i])) + " / " + str((w_femap[i])) + " -> " + str(abs(m.floor((w_calc[i] - w_femap[i]) * 100 /w_femap[i]))) +" %")
+        plt.plot(numeric, f_stiffness[i], color = colors[i], label = [f'{i+1} Тон - {round(w_calc[i], 2)} Hz'])
+
+        plt.title('Расчет форм и частот колебаний', fontsize=16)
+        plt.xlabel('Длина РН, м', fontsize=14)
+        plt.ylabel('Форма', fontsize=14)
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
