@@ -172,19 +172,6 @@ if __name__ == "__main__":
 
     axes[1,2].plot(altitude_list, atomic_speed, color = 'c')
     axes[1,2].set_title('Скорость частиц воздуха', fontsize=10)
-    axes[1,2].grid()
-
-    # axes[0,0].xlabel('Высота, км', fontsize=14)
-    # axes[0,0].ylabel('Плотность, кг/м3', fontsize=14)
-
-    
-    
+    axes[1,2].grid()  
     
     plt.show()
-
-        # plt.xlabel('Длина РН, м', fontsize=14)
-        # plt.ylabel('Форма', fontsize=14)
-        # plt.grid(True)
-        # plt.legend()
-        # plt.tight_layout()
-        # plt.show()
