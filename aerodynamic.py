@@ -128,6 +128,8 @@ class Friction(Geometry):
             self.num = pow(1 + 0.1 * pow(Mach, 0.1), -2 / 3)
 
     def fricalc(self, Mach, SS, nu):
+        if nu == None:
+            nu = 1.789e-05
         if self.midel_area == 0:
             self.area_ratio = 0
         else:
@@ -304,7 +306,6 @@ class LiftForce(Inductance):
 
         H_current = []
         for i in range(N):
-            print(i)
             if 0 <= ratio < 0.5:
                 H_current.append(H_0[i])
             elif 0.5 <= ratio < 1:
@@ -337,7 +338,7 @@ class LiftForce(Inductance):
         return (2 / 57.3) * self.sqr(math.cos(Q))
 
     def triangle_lift(self, Mach, ratio, index):
-        N = 10
+        N = 9
         data = self.read_pressure_file("TriangleNormal.txt", N, 6)
         Mah_v = data[0]
         H_0 = data[1]
