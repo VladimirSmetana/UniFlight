@@ -11,6 +11,9 @@ class Init:
                    695.6, 834.4, 941.9, 984.65, 995.9, 1000]
         self.TMM = [288.15, 216.65, 228.65, 270.65, 214.65, 186.65, 212.0, 380.60]
 
+        self.dynH = [0, 5000, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 60000, 80000]
+        self.dynT = [17.89, 15.07, 13.06, 11.45, 10.17, 9.18, 8.38, 7.18, 6.25, 5.52, 4.52]
+
         # Константы
         self.Mc = 28.964420
         self.gc = 9.80665
@@ -48,6 +51,7 @@ class Init:
         self.Mol = self.Mc
         self.po = None
         self.a = None
+        self.dyn = None
 
         # Вычисления
         self._calculate()
@@ -99,6 +103,16 @@ class Init:
             self.omega = 6.238629e6 * self.P / math.sqrt(self.T * self.Mol)
             self.lamb = (2.648151e-3 * self.T**(3/2)) / (self.T + 245.4 * 10**(-(12 / self.T)))
 
+            if H <= self.dynH[0]:
+                self.dyn = self.dynT[0] * 1e-6
+            elif H >= self.dynH[-1]:
+                self.dyn = self.dynT[-1] * 1e-6
+            else:
+                for i in range(1, len(self.dynH)):
+                    if H < self.dynH[i]:
+                        self.dyn = (self.dynT[i-1] + (H - self.dynH[i-1]) * (self.dynT[i] - self.dynT[i-1]) / (self.dynH[i] - self.dynH[i-1])) * 1e-6
+                    break
+
         self.g = self.gc * (self.R / (self.R + H))**2
 
     def get_T(self):
@@ -118,6 +132,10 @@ class Init:
 
     def get_SV(self):
         return self.a
+    
+
+    def get_dyn(self):
+        return self.dyn
 
 if __name__ == "__main__":
     atm = Init(10000)
