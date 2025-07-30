@@ -1,6 +1,12 @@
 import csv
 import matplotlib.pyplot as plt
 import math as m
+import sys
+import os
+
+folder_path = os.path.abspath('resources')
+sys.path.append(folder_path)
+
 # Инициализация списков
 numeric = []
 length = []

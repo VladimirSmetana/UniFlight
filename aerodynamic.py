@@ -1,6 +1,11 @@
 import math
 import matplotlib.pyplot as plt
 import atmosphere
+import sys
+import os
+
+folder_path = os.path.abspath('resources')
+sys.path.append(folder_path)
 
 class Element:
     def __init__(self):
