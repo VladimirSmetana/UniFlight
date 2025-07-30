@@ -1,7 +1,7 @@
 import math
 import matplotlib.pyplot as plt
 
-class Init:
+class atmosphere:
     def __init__(self, H):
         self.H = H
 
@@ -138,7 +138,7 @@ class Init:
         return self.dyn
 
 if __name__ == "__main__":
-    atm = Init(10000)
+    atm = atmosphere(10000)
     print("Temperature (K):", atm.get_T())
     print("Pressure (Pa):", atm.get_pressure())
     print("Density (kg/m³):", atm.get_density())
@@ -157,7 +157,7 @@ if __name__ == "__main__":
     atomic_speed = []
 
     for altitude in altitude_list:
-        atm = Init(altitude*1000)
+        atm = atmosphere(altitude*1000)
         density.append(atm.get_density())
         temperature.append(atm.get_T())
         gravity.append(atm.get_AOG())

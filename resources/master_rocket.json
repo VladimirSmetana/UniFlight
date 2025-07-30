@@ -1,0 +1,38 @@
+{
+  "name": "Master",
+  "block_number": 2,
+  "payload_mass": 15000,
+  "block_mass": [
+    391000,
+    107000
+  ],
+  "components_ratio": 3.5,
+  "maximum_diameter": 4.1,
+  "head_length": 11,
+  "block_length": [
+    42.0,
+    10.5
+  ],
+  "exhaust_velocity": [
+    3300,
+    3700
+  ],
+  "structural_values": [
+    7,
+    10
+  ],
+  "rocket_sections": [
+    11,
+    0.1,
+    0.6,
+    4.8,
+    0.6,
+    4.7,
+    2.6,
+    1,
+    17.3,
+    2.7,
+    13.2,
+    4.9
+  ]
+}

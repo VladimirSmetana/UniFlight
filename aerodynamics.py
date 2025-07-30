@@ -430,7 +430,7 @@ def main():
     plt.figure(figsize=(14, 6))
 
     for j in range(len(attack_angles)):
-        A = atmosphere.Init(altitudes[j]*1000)
+        A = atmosphere.atmosphere(altitudes[j]*1000)
         angle_rad = G.rad(attack_angles[j])
         CX_list = []
         CY_list = []
