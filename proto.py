@@ -1,9 +1,11 @@
 import atmosphere as atmo
 import aerodynamics as aero
+import path
+import rocket_parser as rp
 
-import sys
-import os
+parser = rp.rocket_parser(path.rocket_lib + "master_rocket.json")
 
-folder_path = os.path.abspath('/home/vsmetana/Рабочий стол/UniFlight/resources')
-sys.path.append(folder_path)
+rocket_length = parser.get_rocket_length()
+structural_values = parser.get_structural_values()
 
+print(parser.get_fuel_mass())

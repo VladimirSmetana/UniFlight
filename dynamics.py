@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import path
 
 
 N = 3840
@@ -34,7 +35,7 @@ l_1 = 23720
 
 
 
-with open("Aero.txt", "r") as Aero:
+with open(path.root_path + "Aero.txt", "r") as Aero:
     for i in range(N):
 
         try:

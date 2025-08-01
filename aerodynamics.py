@@ -1,6 +1,7 @@
 import math
 import matplotlib.pyplot as plt
 import atmosphere
+import path
 
 class Element:
     def __init__(self):
@@ -205,18 +206,18 @@ class Pressure(Geometry):
                 return 0
             return 0.0155 / math.sqrt(self.cif * self.num * self.full_ratio)
         else:
-            data = self.read_pressure_file("HeadPressure.txt", 10, 10)
+            data = self.read_pressure_file(path.root_path + "HeadPressure.txt", 10, 10)
             # 7-й столбец (индекс 6) - как в исходнике
             return self.interpolate_Mach(Mach, [data[0], data[6]])
 
     def head_Cpres(self, Mach):
-        data = self.read_pressure_file("HeadPressure.txt", 10, 10)
+        data = self.read_pressure_file(path.root_path + "HeadPressure.txt", 10, 10)
         ratio = self.elem[0].ratio
         H_current = self.select_ratio_data_pressure(ratio, data)
         return self.interpolate_Mach(Mach, H_current)
 
     def triangle_Cpres(self, Mach, ratio):
-        data = self.read_pressure_file("TrianglePressure.txt", 10, 7)
+        data = self.read_pressure_file(path.root_path + "TrianglePressure.txt", 10, 7)
         H_current = self.select_ratio_data_triangle(ratio, data)
         return self.interpolate_Mach(Mach, H_current)
 
@@ -250,7 +251,7 @@ class Inductance(Geometry):
 
     def E_pressure(self, angle, Mach):
         N = 10
-        data = self.read_pressure_file("EPressure.txt", N, 3)
+        data = self.read_pressure_file(path.root_path + "EPressure.txt", N, 3)
         Mach_v = data[0]
         H_head = data[1]
         H_cone = data[2]
@@ -285,7 +286,7 @@ class LiftForce(Inductance):
 
     def head_lift(self, Mach):
         N = 9
-        data = self.read_pressure_file("HeadNormal.txt", N, 6)
+        data = self.read_pressure_file(path.root_path + "HeadNormal.txt", N, 6)
         Mah_v = data[0]
         H_0 = data[1]
         H_05 = data[2]
@@ -339,7 +340,7 @@ class LiftForce(Inductance):
 
     def triangle_lift(self, Mach, ratio, index):
         N = 9
-        data = self.read_pressure_file("TriangleNormal.txt", N, 6)
+        data = self.read_pressure_file(path.root_path + "TriangleNormal.txt", N, 6)
         Mah_v = data[0]
         H_0 = data[1]
         H_1 = data[2]

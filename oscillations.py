@@ -1,6 +1,7 @@
 import csv
 import matplotlib.pyplot as plt
 import math as m
+import path
 
 # Инициализация списков
 numeric = []
@@ -28,7 +29,7 @@ def calculate_multi(one, second):
 
 # Чтение данных из CSV-файла
 n = 0
-with open('rocket_body.csv', newline='') as csvfile:
+with open(path.root_path + 'rocket_body.csv', newline='') as csvfile:
     spamreader = csv.reader(csvfile, delimiter=',')  # Используем запятую как разделитель
     next(spamreader)  # Пропускаем заголовок
     for row in spamreader:
