@@ -2,6 +2,7 @@ import csv
 import matplotlib.pyplot as plt
 import math as m
 import path
+import rocket_parser as rp
 
 # Инициализация списков
 numeric = []
@@ -29,6 +30,7 @@ def calculate_multi(one, second):
 
 # Чтение данных из CSV-файла
 n = 0
+length_max = 65
 with open(path.root_path + 'rocket_body.csv', newline='') as csvfile:
     spamreader = csv.reader(csvfile, delimiter=',')  # Используем запятую как разделитель
     next(spamreader)  # Пропускаем заголовок
@@ -38,6 +40,22 @@ with open(path.root_path + 'rocket_body.csv', newline='') as csvfile:
         mass.append(float(row[1]))
         stiffness.append(float(row[2]))
         n+=1
+        if n > length_max:
+            break
+
+parser = rp.rocket_parser(path.rocket_lib + "master_rocket.json")
+def changed_mass():
+
+    delta_level_fu = parser.get_delta_level_fu()
+    delta_mass_fu = parser.get_delta_mass_fu()
+    for k in range(48, 66):
+        lost_level = 0
+        while lost_level<length[k]:
+            lost_level+=delta_level_fu[0]
+            mass[k]-=delta_mass_fu[0]/1000
+            if (mass[k])<0:
+                mass[k]=0
+    
 
 def delta_vector(previous, actual):
     f_12 = [x ** 2 for x in previous]
@@ -160,6 +178,7 @@ def calculate_form(index):
 
     return f_stiffness_res
 #################################################################
+changed_mass()
 w_femap = [11.86, 32.51, 60.66, 86.75, 124.37]
 colors = ['b', 'r', 'm']
 
@@ -175,3 +194,4 @@ plt.grid(True)
 plt.legend()
 plt.tight_layout()
 plt.show()
+changed_mass()
