@@ -3,10 +3,12 @@ import matplotlib.pyplot as plt
 import math as m
 import path
 import rocket_parser as rp
+import constants
 
 # Инициализация списков
 numeric = []
 length = []
+read_mass = []
 mass = []
 stiffness = []
 
@@ -37,25 +39,78 @@ with open(path.root_path + 'rocket_body.csv', newline='') as csvfile:
     for row in spamreader:
         numeric.append(n)
         length.append(float(row[0]))  # Преобразуем значения в float и добавляем в список
-        mass.append(float(row[1]))
+        read_mass.append(float(row[1]))
         stiffness.append(float(row[2]))
         n+=1
         if n > length_max:
             break
 
+
 parser = rp.rocket_parser(path.rocket_lib + "master_rocket.json")
-def changed_mass():
+step = parser.get_interstep()
+work_time = parser.get_work_time()
+
+def changed_mass(current_time):
+    block_number = parser.get_block_number()
 
     delta_level_fu = parser.get_delta_level_fu()
     delta_mass_fu = parser.get_delta_mass_fu()
-    for k in range(48, 66):
-        lost_level = 0
-        while lost_level<length[k]:
-            lost_level+=delta_level_fu[0]
-            mass[k]-=delta_mass_fu[0]/1000
-            if (mass[k])<0:
-                mass[k]=0
-    
+    sector_range_fu = parser.get_sector_index_fu()
+
+    delta_level_ox = parser.get_delta_level_ox()
+    delta_mass_ox = parser.get_delta_mass_ox()
+    sector_range_ox = parser.get_sector_index_ox()
+    sector_number_fu = []
+    sector_number_ox = []
+    mass_t = read_mass
+
+    for j in range(block_number):
+
+        sector_number_ox.append(sector_range_ox[j][1]-sector_range_ox[j][0])
+        is_current_point = False
+        for k in range(*sector_range_ox[j]):
+            lost_level = 0
+            time = 0
+
+            while time<work_time[j]/sector_number_ox[j]:
+                if time >= current_time:
+                    is_current_point = True
+                    break
+                lost_level+=delta_level_ox[j]*step
+                mass_t[k]-=(delta_mass_ox[j]/1000*step)
+                print("k:", k, ", mass = ", mass_t[k], ", time = ",time, ", stage = ", j)
+                if (mass_t[k])<0:
+                    mass_t[k]=0   
+                time+=step
+            if is_current_point == True:
+                break
+        if is_current_point == True:
+            break
+
+    for j in range(block_number):
+        sector_number_fu.append(sector_range_fu[j][1]-sector_range_fu[j][0])
+        is_current_point = False
+        for k in range(*sector_range_fu[j]):
+            lost_level = 0
+            time = 0
+
+            while time<work_time[j]/sector_number_fu[j]:
+                if time >= current_time:
+                    is_current_point = True
+                    break
+                lost_level+=delta_level_fu[j]*step
+                mass_t[k]-=(delta_mass_fu[j]/1000*step)
+                if (mass_t[k])<0:
+                    mass_t[k]=0   
+                time+=step
+            if is_current_point == True:
+                break
+        if is_current_point == True:
+            break
+    return mass_t
+
+# Начальные параметры это учитывают
+mass = changed_mass(work_time[1])
 
 def delta_vector(previous, actual):
     f_12 = [x ** 2 for x in previous]
@@ -178,7 +233,10 @@ def calculate_form(index):
 
     return f_stiffness_res
 #################################################################
-changed_mass()
+
+print(work_time[1])
+
+
 w_femap = [11.86, 32.51, 60.66, 86.75, 124.37]
 colors = ['b', 'r', 'm']
 
@@ -194,4 +252,3 @@ plt.grid(True)
 plt.legend()
 plt.tight_layout()
 plt.show()
-changed_mass()

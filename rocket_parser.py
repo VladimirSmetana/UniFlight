@@ -3,6 +3,17 @@ import path
 import math
 import constants
 
+def read_propellant_density(propellant_type):
+    if propellant_type == "kerosene":
+        return constants.density.kerosene.value
+    elif propellant_type == "liquid_oxygen":
+        return constants.density.liquid_oxygen.value
+    elif propellant_type == "tetroxide":
+        return constants.density.tetroxide.value
+    elif propellant_type == "heptyl":
+        return constants.density.heptyl.value
+    else: return 0
+
 class rocket_parser:
     def __init__(self, filename):
         with open(filename, 'r') as r_file:
@@ -26,8 +37,14 @@ class rocket_parser:
         self.thrust = r_data["thrust"]
         self.exhaust_velocity = r_data["exhaust_velocity"]
         self.components_ratio = r_data["components_ratio"]
+        self.sector_index = r_data["sector_index"]
+        self.sector_index_ox = self.sector_index["ox"]
+        self.sector_index_fu = self.sector_index["fu"]
+        self.fuel_density = read_propellant_density(r_data["fuel"])
+        self.oxidizer_density = read_propellant_density(r_data["oxidizer"])
+        self.interstep = r_data["integration_step"]
 
-        self.fuel_mass = []
+        self.propellant_mass = []
         self.delta_mass = []
         self.stage_mass = []
         self.structural_mass = []
@@ -40,18 +57,19 @@ class rocket_parser:
         self.stage_mass.append(self.full_mass)
 
         for k in range(self.block_number):
-            self.fuel_mass.append(self.block_mass[k]*self.structural_values[k]/(self.structural_values[k] + 1))
+            self.propellant_mass.append(self.block_mass[k]*self.structural_values[k]/(self.structural_values[k] + 1))
             self.delta_mass.append(self.thrust[k]/self.exhaust_velocity[k])
+            self.work_time.append(self.propellant_mass[k]/self.delta_mass[k])
 
             self.stage_mass.append(self.full_mass-self.block_mass[k])
 
-            self.structural_mass.append(self.block_mass[k]-self.fuel_mass[k])
+            self.structural_mass.append(self.block_mass[k]-self.propellant_mass[k])
 
             self.delta_mass_ox.append(self.delta_mass[k]*self.components_ratio/(self.components_ratio+1))
             self.delta_mass_fu.append(self.delta_mass[k]*1/(self.components_ratio+1))
 
-            self.delta_level_ox.append(self.delta_mass_ox[k]/constants.density.liquid_oxygen.value/self.maximum_area)
-            self.delta_level_fu.append(self.delta_mass_fu[k]/constants.density.kerosene.value/self.maximum_area)
+            self.delta_level_ox.append(self.delta_mass_ox[k]/self.oxidizer_density/self.maximum_area)
+            self.delta_level_fu.append(self.delta_mass_fu[k]/self.fuel_density/self.maximum_area)
 
     def get_block_number(self):
         return self.block_number
@@ -65,13 +83,12 @@ class rocket_parser:
         return self.payload
     def get_full_mass(self):
         return self.full_mass
-    def get_fuel_mass(self):
-        return self.fuel_mass
+    def get_propellant_mass(self):
+        return self.propellant_mass
     def get_delta_mass(self):
         return self.delta_mass
     def get_stage_mass(self):
         return self.stage_mass
-    
     def get_delta_level_ox(self):
         return self.delta_level_ox    
     def get_delta_level_fu(self):
@@ -80,3 +97,11 @@ class rocket_parser:
         return self.delta_mass_ox    
     def get_delta_mass_fu(self):
         return self.delta_mass_fu 
+    def get_interstep(self):
+        return self.interstep
+    def get_sector_index_ox(self):
+        return self.sector_index_ox
+    def get_sector_index_fu(self):
+        return self.sector_index_fu
+    def get_work_time(self):
+        return self.work_time

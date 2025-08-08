@@ -18,8 +18,8 @@
     3700
   ],
   "thrust": [
-    2000000,
-    1000000
+    8555301,
+    1316502
   ],
   "structural_values": [
     7,
@@ -40,6 +40,10 @@
     4.9
   ],
   "sector_index": {
-    "fu_1": [48, 65]
-  }
+    "ox": [[26, 46],[12, 18]],
+    "fu": [[47, 62],[19, 23]]
+  },
+  "integration_step": 0.1,
+  "fuel": "kerosene",
+  "oxidizer": "liquid_oxygen"
 }
