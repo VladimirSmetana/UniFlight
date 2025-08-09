@@ -50,6 +50,8 @@ parser = rp.rocket_parser(path.rocket_lib + "master_rocket.json")
 step = parser.get_interstep()
 work_time = parser.get_work_time()
 
+
+
 def changed_mass(current_time):
     block_number = parser.get_block_number()
 
@@ -60,59 +62,43 @@ def changed_mass(current_time):
     delta_level_ox = parser.get_delta_level_ox()
     delta_mass_ox = parser.get_delta_mass_ox()
     sector_range_ox = parser.get_sector_index_ox()
-    sector_number_fu = []
-    sector_number_ox = []
+    
     mass_t = read_mass.copy()
 
     for j in range(block_number):
-
-        sector_number_ox.append(sector_range_ox[j][1]-sector_range_ox[j][0])
-        is_current_point = False
+        # Обработка сектора окислителя
+        sector_number_ox = sector_range_ox[j][1] - sector_range_ox[j][0]
         for k in range(*sector_range_ox[j]):
-            lost_level = 0
             time = 0
-
-            while time<work_time[j]/sector_number_ox[j]:
+            while time < work_time[j] / sector_number_ox:
                 if time >= current_time:
-                    is_current_point = True
                     break
-                lost_level+=delta_level_ox[j]*step
-                mass_t[k]-=(delta_mass_ox[j]/1000*step)
-                if (mass_t[k])<0:
-                    mass_t[k]=0   
-                time+=step
-            if is_current_point == True:
-                break
-        if is_current_point == True:
-            break
+                mass_t[k] -= (delta_mass_ox[j] / 1000 * step)
+                mass_t[k] = max(mass_t[k], 0)  # Не допускаем отрицательной массы
+                time += step
 
-    for j in range(block_number):
-        sector_number_fu.append(sector_range_fu[j][1]-sector_range_fu[j][0])
-        is_current_point = False
+        # Обработка сектора топлива
+        sector_number_fu = sector_range_fu[j][1] - sector_range_fu[j][0]
         for k in range(*sector_range_fu[j]):
-            lost_level = 0
             time = 0
-
-            while time<work_time[j]/sector_number_fu[j]:
+            while time < work_time[j] / sector_number_fu:
                 if time >= current_time:
-                    is_current_point = True
                     break
-                lost_level+=delta_level_fu[j]*step
-                mass_t[k]-=(delta_mass_fu[j]/1000*step)
-                if (mass_t[k])<0:
-                    mass_t[k]=0   
-                time+=step
-            if is_current_point == True:
-                break
-        if is_current_point == True:
-            break
+                mass_t[k] -= (delta_mass_fu[j] / 1000 * step)
+                mass_t[k] = max(mass_t[k], 0)  # Не допускаем отрицательной массы
+                time += step
+
     return mass_t
+
 
 # Начальные параметры это учитывают
 ti = 0.0
 ver_mass_vector = []
+time_vector = []
+frec_vector = []
 while ti < work_time[0]:
     ver_mass_vector.append(changed_mass(ti))
+    time_vector.append(ti)
     ti += step
 
 start_color = [0.68, 0.85, 0.9]
@@ -263,14 +249,15 @@ for mass in ver_mass_vector:
         # print("w["+str(i)+"] = " + str((w_calc[i])) + " / " + str((w_femap[i])) + " -> " + str(abs(m.floor((w_calc[i] - w_femap[i]) * 100 /w_femap[i]))) +" %")
         plt.plot(numeric, f_stiffness[i], color = interpolate_color(color_pairs[i][0], color_pairs[i][1], en, total_iterations))
                 #  , label = [f'{i+1} Тон - {round(w_calc[i], 2)} Hz'])
+    frec_vector.append(w_calc[0])
 
     plt.title('Расчет форм и частот колебаний', fontsize=16)
     plt.xlabel('Длина РН, м', fontsize=14)
     plt.ylabel('Форма', fontsize=14)
     plt.grid(True)
-    plt.legend()
     plt.tight_layout()
     en+=1
+    print(mass)
 
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -286,4 +273,6 @@ custom_lines = [
 plt.legend(custom_lines, ['1 Тон', '2 Тон', '3 Тон'])
 
 plt.show()
+
+plt.plot(time_vector, frec_vector)
 plt.show()
