@@ -43,6 +43,7 @@ class rocket_parser:
         self.fuel_density = read_propellant_density(r_data["fuel"])
         self.oxidizer_density = read_propellant_density(r_data["oxidizer"])
         self.interstep = r_data["integration_step"]
+        self.diameters = r_data["diameters"]
 
         self.propellant_mass = []
         self.delta_mass = []
@@ -54,8 +55,13 @@ class rocket_parser:
         self.delta_mass_fu=[]
         self.work_time=[]
 
+        self.mass_vector = []
+        self.time_vector = []
+
         self.stage_mass.append(self.full_mass)
 
+        time=0
+        mass_t = self.full_mass
         for k in range(self.block_number):
             self.propellant_mass.append(self.block_mass[k]*self.structural_values[k]/(self.structural_values[k] + 1))
             self.delta_mass.append(self.thrust[k]/self.exhaust_velocity[k])
@@ -71,6 +77,17 @@ class rocket_parser:
             self.delta_level_ox.append(self.delta_mass_ox[k]/self.oxidizer_density/self.maximum_area)
             self.delta_level_fu.append(self.delta_mass_fu[k]/self.fuel_density/self.maximum_area)
 
+            while mass_t >(self.stage_mass[k]-self.propellant_mass[k]):
+                self.mass_vector.append(mass_t )
+                self.time_vector.append(time)
+                mass_t -=self.delta_mass[k]*self.interstep
+                time+=self.interstep
+            mass_t -=self.structural_mass[k]
+        else:
+            self.mass_vector.append(mass_t)
+            self.time_vector.append(time)
+
+    # rocket parameters
     def get_block_number(self):
         return self.block_number
     def get_rocket_length(self):
@@ -105,3 +122,16 @@ class rocket_parser:
         return self.sector_index_fu
     def get_work_time(self):
         return self.work_time
+    def get_diameters(self):
+        return self.diameters
+    def get_part_length(self):
+        res = []
+        res.append(self.head_length)
+        for k in range(len(self.block_length)):
+            res.append(self.block_length[k])
+        return res
+    # flight parameters
+    def vector_time(self):
+        return self.time_vector
+    def vector_mass(self):
+        return self.mass_vector

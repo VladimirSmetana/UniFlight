@@ -2,6 +2,7 @@ import math
 import matplotlib.pyplot as plt
 import atmosphere
 import path
+import rocket_parser as rp
 
 class Element:
     def __init__(self):
@@ -419,10 +420,11 @@ class UnionStream(DragForce, LiftForce):
         self.CY *= angle
 
 def main():
+    parser = rp.rocket_parser(path.rocket_lib + "master_rocket.json")
     G = UnionStream()
-    G.set_elnumber(4)
-    G.set_diameter([3.7, 3.7, 4.1, 4.1])
-    G.set_length([7, 7, 2, 14])
+    G.set_elnumber(parser.get_block_number()+1)
+    G.set_diameter(parser.get_diameters())
+    G.set_length(parser.get_part_length())
 
     arrayMach = [0.1, 0.3, 0.5, 0.7, 0.9, 1.0, 1.3, 1.5, 2, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
     attack_angles = [2, 4, 6, 8, 10]  # градусы

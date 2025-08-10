@@ -15,28 +15,24 @@ structural_mass = parser.get_structural_mass()
 block_number = parser.get_block_number()
 time_points = parser.get_work_time()
 
-h=0.01
-time=0
-mass_vector = []
-time_vector = []
 
-for k in range(block_number):
-    while full_mass>(stage_mass[k]-propellant_mass[k]):
-        mass_vector.append(full_mass)
-        time_vector.append(time)
-        full_mass-=delta_mass[k]*h
-        time+=h
-    full_mass-=structural_mass[k]
-else:
-    mass_vector.append(full_mass)
-    time_vector.append(time)
+    # double equations::fdV(double vv, double ii)
+    # {
+    #     F_P = (PENG * cos((M_PI * alpha) / 180));
+    #     F_X = CX * S * po * pow(vv, 2) / 2;
+    #     return  F_P/m -  F_X/m - g * sin(ii);
+    # }
 
-print(full_mass)
+    # double equations::fdY(double hh, double vv, double ii)
+    # {
+    #     F_P = (PENG * sin((M_PI * alpha) / 180));
+    #     F_Y = (CY * ((M_PI * alpha) / 180) * S * (po * pow(vv, 2)) / 2);
+    #     return (F_P+ F_Y)/ (m*vv)  - ((g  * cos(ii))) * (1-pow(vv,2)/(g*(constants::earth_radius+hh))) /vv;
+    # }
 
-plt.plot(time_vector, mass_vector)
+plt.plot(parser.vector_time(), parser.vector_mass())
 plt.title('Расчет массы РН по времени полета', fontsize=16)
 plt.xlabel('Время полета, с', fontsize=14)
-plt.xlim(0,time_points[0])
 plt.ylabel('Масса, кг', fontsize=14)
 plt.grid(True)
 plt.tight_layout()

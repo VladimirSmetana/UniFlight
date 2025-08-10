@@ -7,6 +7,7 @@
     107000
   ],
   "components_ratio": 3.5,
+  "diameters": [4.1, 4.1, 4.1],
   "maximum_diameter": 4.1,
   "head_length": 11,
   "block_length": [
@@ -43,7 +44,7 @@
     "ox": [[26, 46],[12, 18]],
     "fu": [[47, 62],[19, 23]]
   },
-  "integration_step": 2,
+  "integration_step": 0.1,
   "fuel": "kerosene",
   "oxidizer": "liquid_oxygen"
 }
