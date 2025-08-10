@@ -411,13 +411,15 @@ class UnionStream(DragForce, LiftForce):
         self.CX = 0.0
         self.CY = 0.0
 
-    def calculate_CXY(self, angle, Mach, SS, nu):
-        self.CX = self.calculate_CX(Mach, SS, nu)
+    def calculate_CXY(self, velocity, altitude, attack_angle):
+        A = atmosphere.atmosphere(altitude)
+        Mach = velocity/A.get_SV()
+        self.CX = self.calculate_CX(Mach, A.get_SV(), A.get_dyn())
         self.CY = self.calculate_CY(Mach)
-        self.E = self.E_pressure(angle, Mach)
+        self.E = self.E_pressure(attack_angle, Mach)
         self.CX += (self.CY + self.E)
         self.CY -= self.rad(self.CY + self.E)
-        self.CY *= angle
+        self.CY *= attack_angle
 
 def main():
     parser = rp.rocket_parser(path.rocket_lib + "master_rocket.json")
@@ -426,31 +428,30 @@ def main():
     G.set_diameter(parser.get_diameters())
     G.set_length(parser.get_part_length())
 
-    arrayMach = [0.1, 0.3, 0.5, 0.7, 0.9, 1.0, 1.3, 1.5, 2, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
+    arrayVelocity = [10, 500, 1000, 1500, 2000, 2500, 3000]
     attack_angles = [2, 4, 6, 8, 10]  # градусы
     altitudes = [0, 10, 20, 40, 60]  # км
 
     plt.figure(figsize=(14, 6))
 
     for j in range(len(attack_angles)):
-        A = atmosphere.atmosphere(altitudes[j]*1000)
-        angle_rad = G.rad(attack_angles[j])
+        angle_rad = attack_angles[j]/57.3
         CX_list = []
         CY_list = []
-        for mach in arrayMach:
-            G.calculate_CXY(angle_rad, mach, A.get_SV(), A.get_dyn())
+        for vel in arrayVelocity:
+            G.calculate_CXY(vel, altitudes[j]*1000, angle_rad)
             CX_list.append(G.CX)
             CY_list.append(G.CY)
 
         plt.subplot(1, 2, 1)
-        plt.plot(arrayMach, CX_list, label=f'α={attack_angles[j]}°, H={altitudes[j]}km')
+        plt.plot(arrayVelocity, CX_list, label=f'α={attack_angles[j]}°, H={altitudes[j]}km')
         plt.xlabel('Mach')
         plt.ylabel('CX')
         plt.grid(True)
         plt.legend(fontsize=8)
 
         plt.subplot(1, 2, 2)
-        plt.plot(arrayMach, CY_list, label=f'α={attack_angles[j]}°, H={altitudes[j]}km')
+        plt.plot(arrayVelocity, CY_list, label=f'α={attack_angles[j]}°, H={altitudes[j]}km')
         plt.xlabel('Mach')
         plt.ylabel('CY')
         plt.grid(True)

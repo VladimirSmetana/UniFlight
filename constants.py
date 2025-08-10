@@ -1,6 +1,5 @@
 import enum
 
-
 acceleration_of_gravity = 9.81
 earth_radius = 6371000
 lamb = (4.73, 7.853, 10.996, 14.137, 17.279)

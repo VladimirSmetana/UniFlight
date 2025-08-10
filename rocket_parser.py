@@ -44,6 +44,7 @@ class rocket_parser:
         self.oxidizer_density = read_propellant_density(r_data["oxidizer"])
         self.interstep = r_data["integration_step"]
         self.diameters = r_data["diameters"]
+        self.thrust = r_data["thrust"]
 
         self.propellant_mass = []
         self.delta_mass = []
@@ -55,6 +56,7 @@ class rocket_parser:
         self.delta_mass_fu=[]
         self.work_time=[]
 
+        self.thrust_vector = []
         self.mass_vector = []
         self.time_vector = []
 
@@ -62,6 +64,7 @@ class rocket_parser:
 
         time=0
         mass_t = self.full_mass
+        thrust_t = self.thrust[0]
         for k in range(self.block_number):
             self.propellant_mass.append(self.block_mass[k]*self.structural_values[k]/(self.structural_values[k] + 1))
             self.delta_mass.append(self.thrust[k]/self.exhaust_velocity[k])
@@ -80,12 +83,18 @@ class rocket_parser:
             while mass_t >(self.stage_mass[k]-self.propellant_mass[k]):
                 self.mass_vector.append(mass_t )
                 self.time_vector.append(time)
+                self.thrust_vector.append(thrust_t)
                 mass_t -=self.delta_mass[k]*self.interstep
                 time+=self.interstep
             mass_t -=self.structural_mass[k]
+            if k+1>=(self.block_number):
+                thrust_t = 0
+            else:
+                thrust_t = self.thrust[k+1]
         else:
             self.mass_vector.append(mass_t)
             self.time_vector.append(time)
+            self.thrust_vector.append(thrust_t)
 
     # rocket parameters
     def get_block_number(self):
@@ -130,8 +139,24 @@ class rocket_parser:
         for k in range(len(self.block_length)):
             res.append(self.block_length[k])
         return res
+    def get_thrust(self):
+        return self.thrust
+    
     # flight parameters
     def vector_time(self):
         return self.time_vector
     def vector_mass(self):
         return self.mass_vector
+    
+    def vector_thrust(self):
+        return self.thrust_vector
+            
+    def get_mass_from_time(self, time):
+        for k in range(len(self.time_vector)):
+            if abs(self.time_vector[k]-time)<self.interstep:
+                return self.mass_vector[k]
+    
+    def get_thrust_from_time(self, time):
+        for k in range(len(self.time_vector)):
+            if abs(self.time_vector[k]-time)<self.interstep:
+                return self.thrust_vector[k]
