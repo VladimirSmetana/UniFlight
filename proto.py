@@ -13,6 +13,7 @@ stage_mass = parser.get_stage_mass()
 propellant_mass = parser.get_propellant_mass()
 structural_mass = parser.get_structural_mass()
 block_number = parser.get_block_number()
+time_points = parser.get_work_time()
 
 h=0.01
 time=0
@@ -33,4 +34,10 @@ else:
 print(full_mass)
 
 plt.plot(time_vector, mass_vector)
+plt.title('Расчет массы РН по времени полета', fontsize=16)
+plt.xlabel('Время полета, с', fontsize=14)
+plt.xlim(0,time_points[0])
+plt.ylabel('Масса, кг', fontsize=14)
+plt.grid(True)
+plt.tight_layout()
 plt.show()

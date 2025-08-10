@@ -43,7 +43,7 @@
     "ox": [[26, 46],[12, 18]],
     "fu": [[47, 62],[19, 23]]
   },
-  "integration_step": 1,
+  "integration_step": 2,
   "fuel": "kerosene",
   "oxidizer": "liquid_oxygen"
 }

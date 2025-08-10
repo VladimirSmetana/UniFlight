@@ -55,38 +55,65 @@ work_time = parser.get_work_time()
 def changed_mass(current_time):
     block_number = parser.get_block_number()
 
-    delta_level_fu = parser.get_delta_level_fu()
     delta_mass_fu = parser.get_delta_mass_fu()
     sector_range_fu = parser.get_sector_index_fu()
 
-    delta_level_ox = parser.get_delta_level_ox()
     delta_mass_ox = parser.get_delta_mass_ox()
     sector_range_ox = parser.get_sector_index_ox()
-    
+
     mass_t = read_mass.copy()
 
+    # Проходим по блокам
     for j in range(block_number):
-        # Обработка сектора окислителя
-        sector_number_ox = sector_range_ox[j][1] - sector_range_ox[j][0]
-        for k in range(*sector_range_ox[j]):
-            time = 0
-            while time < work_time[j] / sector_number_ox:
-                if time >= current_time:
-                    break
-                mass_t[k] -= (delta_mass_ox[j] / 1000 * step)
-                mass_t[k] = max(mass_t[k], 0)  # Не допускаем отрицательной массы
-                time += step
+        # Кол-во секторов окислителя и топлива
+        n_ox = sector_range_ox[j][1] - sector_range_ox[j][0]
+        n_fu = sector_range_fu[j][1] - sector_range_fu[j][0]
 
-        # Обработка сектора топлива
-        sector_number_fu = sector_range_fu[j][1] - sector_range_fu[j][0]
-        for k in range(*sector_range_fu[j]):
-            time = 0
-            while time < work_time[j] / sector_number_fu:
-                if time >= current_time:
-                    break
-                mass_t[k] -= (delta_mass_fu[j] / 1000 * step)
-                mass_t[k] = max(mass_t[k], 0)  # Не допускаем отрицательной массы
-                time += step
+        # Время работы на блок
+        total_time = work_time[j]
+
+        # Время работы на один сектор (окислитель и топливо обрабатываются отдельно)
+        time_per_sector_ox = total_time / n_ox if n_ox > 0 else 0
+        time_per_sector_fu = total_time / n_fu if n_fu > 0 else 0
+
+        # Обрабатываем окислитель
+        for idx_sector in range(n_ox):
+            sector_start_time = idx_sector * time_per_sector_ox
+            sector_end_time = (idx_sector + 1) * time_per_sector_ox
+
+            if current_time >= sector_end_time:
+                # Этот сектор уже полностью отработал, уменьшаем массу полностью
+                for k in range(sector_range_ox[j][0] + idx_sector, sector_range_ox[j][0] + idx_sector + 1):
+                    mass_t[k] -= delta_mass_ox[j] / 1000 * time_per_sector_ox
+                    mass_t[k] = max(mass_t[k], 0)
+            elif sector_start_time <= current_time < sector_end_time:
+                # Этот сектор сейчас в работе, уменьшаем массу пропорционально времени
+                elapsed = current_time - sector_start_time
+                for k in range(sector_range_ox[j][0] + idx_sector, sector_range_ox[j][0] + idx_sector + 1):
+                    mass_t[k] -= delta_mass_ox[j] / 1000 * elapsed
+                    mass_t[k] = max(mass_t[k], 0)
+                break  # Остальные сектора еще не начали работу
+            else:
+                # Сектора, которые ещё не начали работу — масса не меняется
+                pass
+
+        # Аналогично для топлива
+        for idx_sector in range(n_fu):
+            sector_start_time = idx_sector * time_per_sector_fu
+            sector_end_time = (idx_sector + 1) * time_per_sector_fu
+
+            if current_time >= sector_end_time:
+                for k in range(sector_range_fu[j][0] + idx_sector, sector_range_fu[j][0] + idx_sector + 1):
+                    mass_t[k] -= delta_mass_fu[j] / 1000 * time_per_sector_fu
+                    mass_t[k] = max(mass_t[k], 0)
+            elif sector_start_time <= current_time < sector_end_time:
+                elapsed = current_time - sector_start_time
+                for k in range(sector_range_fu[j][0] + idx_sector, sector_range_fu[j][0] + idx_sector + 1):
+                    mass_t[k] -= delta_mass_fu[j] / 1000 * elapsed
+                    mass_t[k] = max(mass_t[k], 0)
+                break
+            else:
+                pass
 
     return mass_t
 
@@ -95,7 +122,9 @@ def changed_mass(current_time):
 ti = 0.0
 ver_mass_vector = []
 time_vector = []
-frec_vector = []
+frec_vector_1 = []
+frec_vector_2 = []
+frec_vector_3 = []
 while ti < work_time[0]:
     ver_mass_vector.append(changed_mass(ti))
     time_vector.append(ti)
@@ -248,16 +277,24 @@ for mass in ver_mass_vector:
         f_stiffness[i] = calculate_form(i)
         # print("w["+str(i)+"] = " + str((w_calc[i])) + " / " + str((w_femap[i])) + " -> " + str(abs(m.floor((w_calc[i] - w_femap[i]) * 100 /w_femap[i]))) +" %")
         plt.plot(numeric, f_stiffness[i], color = interpolate_color(color_pairs[i][0], color_pairs[i][1], en, total_iterations))
+        if en<1:
+            plt.plot(numeric, f_stiffness[i], color = 'g', linewidth=5)
                 #  , label = [f'{i+1} Тон - {round(w_calc[i], 2)} Hz'])
-    frec_vector.append(w_calc[0])
+    frec_vector_1.append(w_calc[0])
+    frec_vector_2.append(w_calc[1])
+    frec_vector_3.append(w_calc[2])
 
-    plt.title('Расчет форм и частот колебаний', fontsize=16)
+    plt.title('Расчет форм колебаний', fontsize=16)
     plt.xlabel('Длина РН, м', fontsize=14)
     plt.ylabel('Форма', fontsize=14)
     plt.grid(True)
     plt.tight_layout()
     en+=1
     print(mass)
+for i in range(0, 3):
+    f_stiffness[i] = calculate_form(i)
+    # print("w["+str(i)+"] = " + str((w_calc[i])) + " / " + str((w_femap[i])) + " -> " + str(abs(m.floor((w_calc[i] - w_femap[i]) * 100 /w_femap[i]))) +" %")
+    plt.plot(numeric, f_stiffness[i], color = 'y')
 
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -266,13 +303,22 @@ from matplotlib.lines import Line2D
 # Создаем кастомные элементы для легенды
 custom_lines = [
     Line2D([0], [0], color='blue', lw=2),
+    Line2D([0], [0], color='red', lw=2),
     Line2D([0], [0], color='black', lw=2),
-    Line2D([0], [0], color='red', lw=2)
+    Line2D([0], [0], color='green', lw=2),
+    Line2D([0], [0], color='yellow', lw=2)
 ]
-
-plt.legend(custom_lines, ['1 Тон', '2 Тон', '3 Тон'])
+plt.legend(custom_lines, ['1 Тон', '2 Тон', '3 Тон', '0 секунда', '130 секунда'])
 
 plt.show()
 
-plt.plot(time_vector, frec_vector)
+plt.title('Расчет частот колебаний', fontsize=16)
+plt.xlabel('Время полета, с', fontsize=14)
+plt.ylabel('Частота, Гц', fontsize=14)
+plt.grid(True)
+plt.tight_layout()
+plt.plot(time_vector, frec_vector_1,color='blue', label = '1 Тон')
+plt.plot(time_vector, frec_vector_2,color='red', label = '2 Тон')
+plt.plot(time_vector, frec_vector_3,color='black', label = '3 Тон')
+plt.legend()
 plt.show()
