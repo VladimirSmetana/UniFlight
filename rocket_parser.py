@@ -98,7 +98,7 @@ class rocket_parser:
 
     # rocket parameters
     def get_block_number(self):
-        return self.block_number
+        return self.block_number+1
     def get_rocket_length(self):
         return self.rocket_length
     def get_structural_values(self):
