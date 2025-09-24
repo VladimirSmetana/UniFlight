@@ -55,6 +55,7 @@ class rocket_parser:
         self.delta_mass_ox=[]
         self.delta_mass_fu=[]
         self.work_time=[]
+        self.full_time=[]
 
         self.thrust_vector = []
         self.mass_vector = []
@@ -95,6 +96,7 @@ class rocket_parser:
             self.mass_vector.append(mass_t)
             self.time_vector.append(time)
             self.thrust_vector.append(thrust_t)
+        self.full_time = sum(self.work_time)
 
     # rocket parameters
     def get_block_number(self):
@@ -131,6 +133,8 @@ class rocket_parser:
         return self.sector_index_fu
     def get_work_time(self):
         return self.work_time
+    def get_full_time(self):
+        return self.full_time
     def get_diameters(self):
         return self.diameters
     def get_part_length(self):

@@ -42,13 +42,13 @@ class ballistics:
     def delta_velocity(self, time):
         self.update_params(time)
         F_P = self.thrust * math.cos(self.attack)
-        F_X = self.G.CX*self.atm.get_density()*parser.maximum_area*self.vel**2/2
+        F_X = self.G.CX*math.pi/180*self.atm.get_density()*parser.maximum_area*self.vel**2/2
         return F_P/self.mass-F_X/self.mass - self.atm.get_AOG() * math.sin(self.Y)
 
     def delta_trajangle(self, time):
         self.update_params(time)
         F_P = self.thrust * math.sin(self.attack)
-        F_Y = self.G.CY*self.atm.get_density()*parser.maximum_area*self.vel**2/2
+        F_Y = self.G.CY*math.pi/180*self.atm.get_density()*parser.maximum_area*self.vel**2/2
         F_G = ((self.atm.get_AOG() * math.cos(self.Y)) * (1-self.vel**2/2)/(self.atm.get_AOG()*(constants.earth_radius + self.alt)))
         return (F_P + F_Y)/(self.mass*self.vel) - F_G/self.vel
     
@@ -81,8 +81,9 @@ event_stop_velocity.terminal = True
 event_stop_velocity.direction = -1
 
 if __name__ == "__main__":
+    ft = parser.get_full_time()
     h = parser.interstep
-    t_span = (0, 300)
+    t_span = (0, ft-1)
     y0 = [1, 1, 1]
     attack_list.clear()
     
