@@ -108,7 +108,10 @@ class Friction(Geometry):
 
     def stream_calc(self, Re, Mach):
         if Re <= 485000:
-            self.cif = 2.656 / math.sqrt(Re)
+            if (abs(Re)< 0.0001):
+                self.cif = 0
+            else:
+                self.cif = 2.656 / math.sqrt(Re)
             self.num = pow(1 + 0.1 * pow(Mach, 0.1), -0.125)
         elif Re < 10000000:
             try:
@@ -123,7 +126,10 @@ class Friction(Geometry):
             if self.x_t >= 1:
                 self.cif = 0.91 / pow(math.log10(Re), 2.58) * pow(1 - self.x_t + 40 * pow(self.x_t, 0.625) / pow(Re, 0.375), 0.8)
             else:
-                self.cif = 2.656 / math.sqrt(Re)
+                if (abs(Re)< 0.0001):
+                    self.cif = 0
+                else:
+                    self.cif = 2.656 / math.sqrt(Re)
             self.num = pow(1 + 0.1 * pow(Mach, 0.1), -2 / 3)
         else:
             self.cif = 0.91 / pow(math.log10(Re), 2.58)
@@ -413,18 +419,19 @@ class UnionStream(DragForce, LiftForce):
 
     def calculate_CXY(self, velocity, altitude, attack_angle):
         A = atmosphere.atmosphere(altitude)
-        Mach = velocity/A.get_SV()
-        self.CX = self.calculate_CX(Mach, A.get_SV(), A.get_dyn())
-        self.CY = self.calculate_CY(Mach)
-        self.E = self.E_pressure(attack_angle, Mach)
-        self.CX += (self.CY + self.E)
-        self.CY -= self.rad(self.CY + self.E)
-        self.CY *= attack_angle
+        if (A.get_SV()!=None):
+            Mach = velocity/A.get_SV()
+            self.CX = self.calculate_CX(Mach, A.get_SV(), A.get_dyn())
+            self.CY = self.calculate_CY(Mach)
+            self.E = self.E_pressure(attack_angle, Mach)
+            self.CX += (self.CY + self.E)
+            self.CY -= self.rad(self.CY + self.E)
+            self.CY *= attack_angle
 
 def main():
     parser = rp.rocket_parser(path.rocket_lib + "master_rocket.json")
     G = UnionStream()
-    G.set_elnumber(parser.get_block_number()+1)
+    G.set_elnumber(parser.get_block_number())
     G.set_diameter(parser.get_diameters())
     G.set_length(parser.get_part_length())
 

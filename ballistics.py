@@ -15,10 +15,9 @@ class ballistics:
         self.N = N
         self.Y = Y
         self.vel = vel
-
-        self.alt = self.vel * parser.interstep * math.sin(self.Y)
-
-        self.alpha = att.alpha(1, 1, 2, 0)
+        
+        time_sep = parser.get_work_time()
+        self.alpha = att.alpha(4, 0.15, time_sep[0], True)
 
         self.G = aero.UnionStream()
         self.G.set_elnumber(parser.get_block_number())
@@ -28,17 +27,16 @@ class ballistics:
         self.thrust = 0
         self.mass = 0
         self.attack = 0
-        self.atm = atmo.atmosphere(0)
+
+        self.alt = self.vel * parser.interstep * math.sin(self.Y)
+        self.atm = atmo.atmosphere(self.alt)
 
     def update_params(self, time):
-        print("getting mass ps")
         self.thrust =  parser.get_thrust_from_time(time)
         self.mass   =  parser.get_mass_from_time(time)
-        print("getting attack angle")
-        self.attack = self.alpha.calculate_alpha(self.vel, time)
-        print("getting cx")
+        self.attack = self.alpha.calculate_alpha(self.vel, time)*math.pi/180
+        self.alt = self.vel * parser.interstep * math.sin(self.Y)
         self.G.calculate_CXY(self.vel, self.alt, self.attack)
-        print("getting atmosphere ps")
         self.atm = atmo.atmosphere(self.alt)
 
     def delta_velocity(self, time):
@@ -58,18 +56,59 @@ class ballistics:
         return (self.vel/(constants.earth_radius + self.alt))*math.cos(self.Y)
 
 
+from scipy.integrate import solve_ivp
+
+v_max = 0
+attack_list = []
+
+def system(t, vars):
+    n, y, v = vars
+    b = ballistics(n, y, v)
+    dn = b.delta_polar()
+    dy = b.delta_trajangle(t)
+    dv = b.delta_velocity(t)
+    attack_list.append(b.attack)
+    return [dn, dy, dv]
+
+def event_stop_velocity(t, vars):
+    v = vars[2]
+    global v_max
+    if (v > v_max): 
+        v_max = v
+    return v - 0.9
+
+event_stop_velocity.terminal = True
+event_stop_velocity.direction = -1
+
 if __name__ == "__main__":
-
-    n = 0
-    y = 0
-    v = 0
-    t = 0
-
     h = parser.interstep
+    t_span = (0, 300)
+    y0 = [1, 1, 1]
+    attack_list.clear()
+    
+    sol = solve_ivp(system, t_span, y0, method='RK45', max_step=h, events=event_stop_velocity)
+    print("Max velocity: ", v_max)
 
-    while t < 10:
-        b = ballistics(n, y, v)
-        v = h * b.delta_velocity(t)
-        y = h * b.delta_trajangle(t)
-        n = h * b.delta_polar()
-        t += h
+    a = att.alpha(4, 0.15, parser.get_work_time()[0], False)
+    attack_deg = [(a.calculate_alpha(sol.y[2, i], sol.t[i])) for i in range(len(sol.t))]
+
+    plt.figure(figsize=(10,6))
+
+    plt.subplot(2,1,1)
+    plt.plot(sol.t, sol.y[2], label='Скорость v(t)')
+    plt.xlabel('Время, с')
+    plt.ylabel('Скорость, м/с')
+    plt.title('Скорость по времени')
+    plt.legend()
+    plt.grid(True)
+
+    plt.subplot(2,1,2)
+    plt.plot(sol.t, attack_deg, label='Угол атаки α(t)', color='orange')
+    plt.xlabel('Время, с')
+    plt.ylabel('Угол атаки, градусы')
+    plt.title('Угол атаки по времени')
+    plt.legend()
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.show()

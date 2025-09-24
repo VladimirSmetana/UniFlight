@@ -1,6 +1,6 @@
 import math
 
-class Alpha:
+class alpha:
     def __init__(self, k1: float, k2: float, septime: float, IsRichOrbit: bool):
         self.k1 = k1
         self.k2 = k2
@@ -15,7 +15,7 @@ class Alpha:
         if 50 < velocity < 270 and time <= self.septime:
             z = math.pi * (velocity - 50)
             che = (velocity - 50) + 0.25 * (270 - velocity)
-            ans = self.k1 * (math.sin(z / che) ** 2)
+            ans = - self.k1 * (math.sin(z / che) ** 2)
         elif time >= self.septime:
             if not self.IsRichOrbit:
                 ans = self.k2 * (time - self.septime)
@@ -28,5 +28,5 @@ class Alpha:
 
 # Пример использования
 if __name__ == "__main__":
-    a = Alpha(1.0, 0.5, 100.0, True)
+    a = alpha(1.0, 0.5, 100.0, True)
     print(a.calculate_alpha(120.0, 95.0))

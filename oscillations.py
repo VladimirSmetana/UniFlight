@@ -290,7 +290,7 @@ for mass in ver_mass_vector:
     plt.grid(True)
     plt.tight_layout()
     en+=1
-    print(mass)
+    #print(mass)
 for i in range(0, 3):
     f_stiffness[i] = calculate_form(i)
     # print("w["+str(i)+"] = " + str((w_calc[i])) + " / " + str((w_femap[i])) + " -> " + str(abs(m.floor((w_calc[i] - w_femap[i]) * 100 /w_femap[i]))) +" %")
