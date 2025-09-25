@@ -18,7 +18,7 @@ class alpha:
             ans = - self.k1 * (math.sin(z / che) ** 2)
         elif time >= self.septime:
             if not self.IsRichOrbit:
-                ans = self.k2 * (time - self.septime)
+                ans = self.k2 * (time - self.septime)**(1/2)
             else:
                 if time - self.septime < 60:
                     z = math.pi * (time - self.septime)

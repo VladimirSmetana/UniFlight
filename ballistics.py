@@ -10,7 +10,7 @@ import constants
 parser = rp.rocket_parser(path.rocket_lib + "master_rocket.json")
 
 k1a = 4.1
-k2a = 0.15
+k2a = 2
 
 attack_list = []
 time_list = []
@@ -33,7 +33,7 @@ class ballistics:
         self.thrust = 0
         self.mass = 0
         self.attack = 0
-
+        self.dencity = 0
         
         self.atm = atmo.atmosphere(self.alt)
 
@@ -44,6 +44,12 @@ class ballistics:
         self.G.calculate_CXY(self.vel, self.alt, self.attack)
 
         self.atm = atmo.atmosphere(self.alt)
+        self.dencity = self.atm.get_density()
+
+        if self.alt > 90000:
+            self.G.CX = 0
+            self.G.CY = 0
+            self.dencity = 0
 
         attack_list.append(self.attack*180/math.pi)
         time_list.append(time)
@@ -53,36 +59,39 @@ class ballistics:
     def delta_velocity(self, time):
         self.update_params(time)
         F_P = self.thrust * math.cos(self.attack)
-        F_X = self.G.CX*self.atm.get_density()*parser.maximum_area*self.vel**2/2
-        return F_P/self.mass-F_X/self.mass - self.atm.get_AOG() * math.sin(self.Y)
+        F_X = self.G.CX*57.3*self.dencity*parser.maximum_area*self.vel**2/2
+        return F_P/self.mass - F_X/self.mass - self.atm.get_AOG() * math.sin(self.Y)
 
     def delta_trajangle(self, time):
         self.update_params(time)
         F_P = self.thrust * math.sin(self.attack)
-        F_Y = self.G.CY*self.attack*self.atm.get_density()*parser.maximum_area*self.vel**2/2
+        F_Y = self.G.CY*self.attack*self.dencity*parser.maximum_area*self.vel**2/2
         F_G = ((self.atm.get_AOG() * math.cos(self.Y)) * (1-self.vel**2/2)/(self.atm.get_AOG()*(constants.earth_radius + self.alt)))
         return (F_P + F_Y)/(self.mass*self.vel) - F_G/self.vel
     
-    def delta_polar(self):
+    def delta_polar(self, time):
+        self.update_params(time)
         return (self.vel/(constants.earth_radius + self.alt))*math.cos(self.Y)
     
-    def delta_altitude(self):
+    def delta_altitude(self, time):
+        self.update_params(time)
         return self.vel * math.sin(self.Y)
 
-
+    def delta_longitude(self, time):
+        self.update_params(time)
+        return self.vel * math.cos(self.Y)
 
 from scipy.integrate import solve_ivp
 
 v_max = 0
 
-
 def system(t, vars):
     n, y, v, h = vars
     b = ballistics(n, y, v, h)
-    dn = b.delta_polar()
+    dn = b.delta_polar(t)
     dy = b.delta_trajangle(t)
     dv = b.delta_velocity(t)
-    dh = b.delta_altitude()
+    dh = b.delta_altitude(t)
     return [dn, dy, dv, dh]
 
 def event_stop_velocity(t, vars):
@@ -98,8 +107,8 @@ event_stop_velocity.direction = -1
 if __name__ == "__main__":
     ft = parser.get_full_time()
     h = parser.interstep
-    t_span = (0, 120)
-    y0 = [1, math.pi/2, 1, 1]
+    t_span = (0, ft-1)
+    y0 = [0, math.pi/2, 0.1, 0.1]
     
     sol = solve_ivp(system, t_span, y0, method='RK45', max_step=h, events=event_stop_velocity)
     print("Max velocity: ", v_max)
@@ -131,7 +140,7 @@ if __name__ == "__main__":
     plt.grid(True)
 
     plt.subplot(4,1,4)
-    plt.plot(sol.t, sol.y[1]*57.3, label='Угол, град', color='blue')
+    plt.plot(sol.t, sol.y[1]*57.3, label='Угол, град', color='orange')
     plt.xlabel('Время, с')
     plt.ylabel('Угол, град')
     plt.title('Угол по времени')
