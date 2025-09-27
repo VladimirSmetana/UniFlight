@@ -1,2 +1,4 @@
-root_path = "/home/v-smetana/Desktop/UniFlight/resources/"
-rocket_lib = "/home/v-smetana/Desktop/UniFlight/rocket_lib/"
+import os
+home=os.getcwd()
+root_path = home + "/resources/"
+rocket_lib = home + "/rocket_lib/"
