@@ -6,11 +6,32 @@ import rocket_parser as rp
 import matplotlib.pyplot as plt
 import math
 import constants
+import csv
+import os
+
+def write_arrays_to_csv(filename, **arrays):
+    if not arrays:
+        raise ValueError("Array is required.")
+    
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    
+    headers = list(arrays.keys())
+    max_length = min(len(arr) for arr in arrays.values())
+    
+    with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(headers)
+        for i in range(max_length):
+            row = [arrays[name][i] for name in headers]
+            writer.writerow(row)
+    
+    print(f"Data was moved to '{filename}'.")
 
 parser = rp.rocket_parser(path.rocket_lib + "master_rocket.json")
 
 attack_list = []
 time_list = []
+wind_list = []
 
 class ballistics:
     def __init__(self, N, Y, vel, alt):
@@ -41,15 +62,20 @@ class ballistics:
 
             self.atm = atmo.atmosphere(self.alt)
             self.dencity = self.atm.get_density()
+            self.wind = self.atm.get_wind()
 
             if self.alt > 90000:
                 self.G.CX = 0
                 self.G.CY = 0
                 self.dencity = 0
 
+            self.last_time = time
+
+            #output
             attack_list.append(self.attack*180/math.pi)
             time_list.append(time)
-            self.last_time = time
+            wind_list.append(self.wind)
+
 
     def delta_velocity(self, time):
         self.update_params(time)
@@ -112,6 +138,10 @@ if __name__ == "__main__":
     print("Max altitude: ", sol.y[3][-1]/1000)
     print("Max trajangle: ", sol.y[1][-1]*57.3)
     print("Max attack: ", attack_list[-1])
+
+    write_arrays_to_csv("output/dynamic_coefs.csv",
+                        time=time_list,
+                        wind=wind_list)
 
     plt.figure(figsize=(10,12))
 
