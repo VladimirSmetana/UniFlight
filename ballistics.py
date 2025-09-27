@@ -30,23 +30,26 @@ class ballistics:
         self.dencity = 0
         
         self.atm = atmo.atmosphere(self.alt)
+        self.last_time = None
 
     def update_params(self, time):
-        self.thrust =  parser.get_thrust_from_time(time)
-        self.mass   =  parser.get_mass_from_time(time)
-        self.attack = parser.get_attack(self.vel, time)*math.pi/180
-        self.G.calculate_CXY(self.vel, self.alt, self.attack)
+        if self.last_time != time:
+            self.thrust =  parser.get_thrust_from_time(time)
+            self.mass   =  parser.get_mass_from_time(time)
+            self.attack = parser.get_attack(self.vel, time)*math.pi/180
+            self.G.calculate_CXY(self.vel, self.alt, self.attack)
 
-        self.atm = atmo.atmosphere(self.alt)
-        self.dencity = self.atm.get_density()
+            self.atm = atmo.atmosphere(self.alt)
+            self.dencity = self.atm.get_density()
 
-        if self.alt > 90000:
-            self.G.CX = 0
-            self.G.CY = 0
-            self.dencity = 0
+            if self.alt > 90000:
+                self.G.CX = 0
+                self.G.CY = 0
+                self.dencity = 0
 
-        attack_list.append(self.attack*180/math.pi)
-        time_list.append(time)
+            attack_list.append(self.attack*180/math.pi)
+            time_list.append(time)
+            self.last_time = time
 
     def delta_velocity(self, time):
         self.update_params(time)
@@ -80,12 +83,13 @@ v_max = 0
 def system(t, vars):
     n, y, v, h, l = vars
     b = ballistics(n, y, v, h)
-    dn = b.delta_polar(t)
-    dy = b.delta_trajangle(t)
-    dv = b.delta_velocity(t)
-    dh = b.delta_altitude(t)
-    dl = b.delta_longitude(t)
-    return [dn, dy, dv, dh, dl]
+    return [
+        b.delta_polar(t),
+        b.delta_trajangle(t),
+        b.delta_velocity(t),
+        b.delta_altitude(t),
+        b.delta_longitude(t)
+    ]
 
 def event_stop_velocity(t, vars):
     v = vars[2]

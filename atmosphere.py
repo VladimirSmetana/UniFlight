@@ -14,6 +14,9 @@ class atmosphere:
         self.dynH = [0, 5000, 10000, 15000, 20000, 25000, 30000, 40000, 50000, 60000, 80000]
         self.dynT = [17.89, 15.07, 13.06, 11.45, 10.17, 9.18, 8.38, 7.18, 6.25, 5.52, 4.52]
 
+        self.windH =[100 , 6000, 12000 , 18000 , 24000 , 30000 , 36000, 42000 , 48000, 54000, 60000, 66000, 72000, 78000, 84000, 90000, 94000]
+        self.windV=[1.9 , 8, 15 , 18 , 24 , 12 , 10, 8  ,  6,  5,  4,  3,  3,  2,  2,  1,  0.1]
+
         # Константы
         self.Mc = 28.964420
         self.gc = 9.80665
@@ -52,7 +55,7 @@ class atmosphere:
         self.po = None
         self.a = None
         self.dyn = None
-
+        self.wind_velocity = 0
         # Вычисления
         self._calculate()
 
@@ -70,6 +73,13 @@ class atmosphere:
             if H >= self.HT[i - 1] and H < self.HT[i]:
                 self.Tm = self.TMM[i - 1] + (H - self.HT[i - 1]) * (self.TMM[i] - self.TMM[i - 1]) / (self.HT[i] - self.HT[i - 1])
                 break
+
+        # Скорость ветра W
+        for i in range(1, 17):
+            if H >= self.windH[i - 1] and H < self.windH[i]:
+                self.wind_velocity = self.windV[i - 1] + (H - self.windH[i - 1]) * (self.windV[i] - self.windV[i - 1]) / (self.windH[i] - self.windH[i - 1])
+                break
+        
 
         if H < 94000:
             # Коэффициенты полинома молярной массы
@@ -133,9 +143,11 @@ class atmosphere:
     def get_SV(self):
         return self.a
     
-
     def get_dyn(self):
         return self.dyn
+    
+    def get_wind(self):
+        return self.wind_velocity
 
 if __name__ == "__main__":
     atm = atmosphere(10000)
