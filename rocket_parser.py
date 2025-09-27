@@ -1,5 +1,5 @@
 import json
-import path
+import attack
 import math
 import constants
 
@@ -45,6 +45,7 @@ class rocket_parser:
         self.interstep = r_data["integration_step"]
         self.diameters = r_data["diameters"]
         self.thrust = r_data["thrust"]
+        self.attack_coefs = r_data["attack_coefs"]
 
         self.propellant_mass = []
         self.delta_mass = []
@@ -97,6 +98,11 @@ class rocket_parser:
             self.time_vector.append(time)
             self.thrust_vector.append(thrust_t)
         self.full_time = sum(self.work_time)
+
+        self.alpha = attack.alpha(self.attack_coefs[0],
+                                  self.attack_coefs[1],
+                                  self.work_time[0],
+                                  False)
 
     # rocket parameters
     def get_block_number(self):
@@ -164,3 +170,5 @@ class rocket_parser:
         for k in range(len(self.time_vector)):
             if abs(self.time_vector[k]-time)<self.interstep:
                 return self.thrust_vector[k]
+    def get_attack(self, vel, time):
+        return self.alpha.calculate_alpha(vel, time)
