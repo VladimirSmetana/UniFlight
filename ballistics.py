@@ -106,6 +106,8 @@ if __name__ == "__main__":
     sol = solve_ivp(system, t_span, y0, method='RK45', max_step=h, events=event_stop_velocity)
     print("Max velocity: ", v_max)
     print("Max altitude: ", sol.y[3][-1]/1000)
+    print("Max trajangle: ", sol.y[1][-1]*57.3)
+    print("Max attack: ", attack_list[-1])
 
     plt.figure(figsize=(10,12))
 
