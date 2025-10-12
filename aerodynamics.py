@@ -441,7 +441,7 @@ def main():
 
     plt.figure(figsize=(14, 6))
 
-    for j in range(len(attack_angles)):
+    for j in enumerate((attack_angles)):
         angle_rad = attack_angles[j]/57.3
         CX_list = []
         CY_list = []

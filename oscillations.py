@@ -12,14 +12,14 @@ read_mass = []
 mass = []
 stiffness = []
 
-L = [4.73,  7.853, 10.996, 14.137, 17.279]
+L = constants.lamb
 
 def absmax(iterable):
     return max(iterable, key=abs)
 
 def calculate_sum(base):
     sum = [0] * len(base)
-    for i in range(len(base)):
+    for i in enumerate((base)):
         if i == 0:
             sum[i] = base[i]
         else:
@@ -31,8 +31,6 @@ def calculate_multi(one, second):
 
 
 # Чтение данных из CSV-файла
-n = 0
-length_max = 65
 with open(path.root_path + 'rocket_body.csv', newline='') as csvfile:
     spamreader = csv.reader(csvfile, delimiter=',')  # Используем запятую как разделитель
     next(spamreader)  # Пропускаем заголовок
@@ -41,9 +39,6 @@ with open(path.root_path + 'rocket_body.csv', newline='') as csvfile:
         length.append(float(row[0]))  # Преобразуем значения в float и добавляем в список
         read_mass.append(float(row[1]))
         stiffness.append(float(row[2]))
-        n+=1
-        if n > length_max:
-            break
 
 
 parser = rp.rocket_parser(path.rocket_lib + "master_rocket.json")
@@ -167,7 +162,7 @@ for mass in ver_mass_vector:
 
     rocket_length = 0
     rocket_mass = 0
-    for i in range(len(length)):
+    for i in enumerate((length)):
         rocket_length += length[i]
         rocket_mass   += mass[i]
 
@@ -183,7 +178,7 @@ for mass in ver_mass_vector:
     f_mass = [0] * 5
     w_calc = [0] * 5
     fi     = [0] * 5
-    for i in range(len(f_zero)):
+    for i in enumerate((f_zero)):
         f_zero[i] = list(((m.sin(a[i]*x)+m.sinh(a[i]*x))*Y[i]+(m.cos(a[i]*x)+m.cosh(a[i]*x)))/2 for x in numeric)
 
     w_zero = [m.sqrt(max(stiffness)/(rocket_mass*(10**3)/rocket_length*pow(rocket_length,4)))*(x**2)/(2*m.pi) for x in L]
@@ -258,7 +253,7 @@ for mass in ver_mass_vector:
             w_calc[index] = m.sqrt(sum_mf_12[-1]/(sum_M1x2_E[-1]*1000.0*pow(length[-1]/2,4)))/(2*m.pi)
 
             f_start = f_stiffness_res
-            if max(abs(f_stiffness_res[i] - f_start[i]) for i in range(len(f_start))) < tolerance:
+            if max(abs(f_stiffness_res[i] - f_start[i]) for i in enumerate((f_start))) < tolerance:
                 break
 
         return f_stiffness_res

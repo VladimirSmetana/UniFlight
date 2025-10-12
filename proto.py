@@ -16,7 +16,7 @@ block_number = parser.get_block_number()
 time_points = parser.get_work_time()
 
 
-plt.plot(parser.vector_time(), parser.vector_mass())
+plt.plot(parser.vector_time(), parser.static_time)
 plt.title('Расчет массы РН по времени полета', fontsize=16)
 plt.xlabel('Время полета, с', fontsize=14)
 plt.ylabel('Масса, кг', fontsize=14)
