@@ -2,6 +2,7 @@
   "name": "Master",
   "block_number": 2,
   "payload_mass": 15000,
+  "payload_structure": 1500,
   "block_mass": [
     391000,
     107000
@@ -41,6 +42,7 @@
     4.9
   ],
   "sector_index": {
+    "payload": [0,11],
     "ox": [[26, 46],[12, 18]],
     "fu": [[47, 62],[19, 23]]
   },

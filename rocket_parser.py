@@ -36,6 +36,7 @@ class rocket_parser:
         self.maximum_area = (math.pi*(self.max_diameter**2))/4
         self.structural_values = r_data["structural_values"]
         self.payload = r_data["payload_mass"]
+        self.payload_str = r_data["payload_structure"]
         self.block_mass = r_data["block_mass"]
         self.full_mass = self.payload + sum(self.block_mass)
 
@@ -46,6 +47,7 @@ class rocket_parser:
         self.sector_index = r_data["sector_index"]
         self.sector_index_ox = self.sector_index["ox"]
         self.sector_index_fu = self.sector_index["fu"]
+        self.sector_index_payload = self.sector_index["payload"]
         self.fuel_density = read_propellant_density(r_data["fuel"])
         self.oxidizer_density = read_propellant_density(r_data["oxidizer"])
         self.interstep = r_data["integration_step"]
@@ -68,6 +70,9 @@ class rocket_parser:
         self.mass_vector = []
         self.propellant_mass_vector = []
         self.time_vector = []
+        self.static_vector = []
+        self.inertia_vector = []
+        self.center_vector = []
         self.mass_ox=[]
         self.mass_fu=[]
 
@@ -86,6 +91,16 @@ class rocket_parser:
         time=0
         mass_t = self.full_mass
         thrust_t = self.thrust[0]
+
+        self.work_time.append(0)
+
+        static_payload = calculate_static(self.payload + self.payload_str, 
+                                          self.sector_index_payload[0] + self.sector_index_payload[-1])
+
+        inertia_payload = calculate_inertia(self.payload + self.payload_str, 
+                                            self.sector_index_payload[0] + self.sector_index_payload[-1], 
+                                            abs(self.sector_index_payload[0] - self.sector_index_payload[-1]), 
+                                            self.max_diameter)
 
         for k in range(self.block_number):
             self.propellant_mass.append(self.block_mass[k]*self.structural_values[k]/(self.structural_values[k] + 1))
@@ -115,8 +130,8 @@ class rocket_parser:
             shoulder_fu_diff_t  = abs(self.sector_index_fu[k][0] - self.sector_index_fu[k][-1])
             shoulder_str_diff_t = abs(self.sector_index_ox[k][0] - self.sector_index_fu[k][-1])
 
-            static_ox_t = calculate_static(mass_ox_t[k], shoulder_ox_t)
-            static_fu_t = calculate_static(mass_fu_t[k], shoulder_fu_t)
+            static_ox_tt = calculate_static(mass_ox_t[k], shoulder_ox_t)
+            static_fu_tt = calculate_static(mass_fu_t[k], shoulder_fu_t)
             static_str  = calculate_static(self.structural_mass[k], shoulder_str)
 
             inertia_ox_t = calculate_inertia(mass_ox_t[k], shoulder_ox_t, shoulder_ox_diff_t, self.max_diameter)
@@ -124,9 +139,9 @@ class rocket_parser:
             inertia_str  = calculate_inertia(self.structural_mass[k], shoulder_str, shoulder_str_diff_t, self.max_diameter)
 
             # Append to lists instead of accumulating a single static variable
-            self.static_ox.append(static_ox_t)
+            self.static_ox.append(static_ox_tt)
             self.static_str.append(static_str)
-            self.static_fu.append(static_fu_t)
+            self.static_fu.append(static_fu_tt)
 
             self.inertia_ox.append(inertia_ox_t)
             self.inertia_str.append(inertia_str)
@@ -155,15 +170,87 @@ class rocket_parser:
         self.inertia = []
         for k in range(self.block_number):
             self.static.append(sum(self.static_ox[k:]) + sum(self.static_str[k:]) + sum(self.static_fu[k:]))
-            print(self.static[k])
             self.inertia.append(sum(self.inertia_ox[k:]) + sum(self.static_str[k:]) + sum(self.static_fu[k:]))
-            print(self.inertia[k])
+
+        upper_level_ox = []
+        down_level_ox  = []
+        mass_level_ox  = []
+        static_ox_t    = []
+        inertia_ox_t    = []
+
+        upper_level_fu = []
+        down_level_fu  = []
+        mass_level_fu  = []
+        static_fu_t    = []
+        inertia_fu_t    = []
+
+        upper_level_ox.append(self.sector_index_ox[0][0])
+        down_level_ox.append(self.sector_index_ox[0][-1])
+        mass_level_ox.append(mass_ox_t[0])
+        static_ox_t.append(self.static_ox[0])
+        inertia_ox_t.append(self.inertia_ox[0])
+
+        upper_level_fu.append(self.sector_index_fu[0][0])
+        down_level_fu.append(self.sector_index_fu[0][-1])
+        mass_level_fu.append(mass_fu_t[0])
+        static_fu_t.append(self.static_fu[0])
+        inertia_fu_t.append(self.inertia_fu[0])
+
+        upper_level_ox.append(self.sector_index_ox[1][0])
+        down_level_ox.append(self.sector_index_ox[1][-1])
+        mass_level_ox.append(mass_ox_t[1])
+        static_ox_t.append(self.static_ox[1])
+        inertia_ox_t.append(self.inertia_ox[1])
+
+        upper_level_fu.append(self.sector_index_fu[1][0])
+        down_level_fu.append(self.sector_index_fu[1][-1])
+        mass_level_fu.append(mass_fu_t[1])
+        static_fu_t.append(self.static_fu[1])
+        inertia_fu_t.append(self.inertia_fu[1])
 
         for m in range(len(self.time_vector)):
-            for k in range(self.block_number):
-                self.static[k] = 0
+            if  self.work_time[0] <= self.time_vector[m] < (self.work_time[0] + self.work_time[1]):
+                static_ox_t[0] = calculate_static(mass_level_ox[0], upper_level_ox[0] + down_level_ox[0])
+                static_fu_t[0] = calculate_static(mass_level_fu[0], upper_level_fu[0] + down_level_fu[0])
+                inertia_ox_t[0] = calculate_inertia(mass_level_ox[0], 
+                                                    upper_level_ox[0] + down_level_ox[0], 
+                                                    abs(upper_level_ox[0] - down_level_ox[0]),
+                                                    self.max_diameter)
+                inertia_fu_t[0] = calculate_inertia(mass_level_fu[0], 
+                                                    upper_level_fu[0] + down_level_fu[0], 
+                                                    abs(upper_level_ox[0] - down_level_ox[0]),
+                                                    self.max_diameter)
+                mass_level_ox[0] -= self.delta_mass_ox[0]*self.interstep
+                down_level_ox[0] -= self.delta_level_ox[0]*self.interstep
+                mass_level_fu[0] -= self.delta_mass_fu[0]*self.interstep
+                down_level_fu[0] -= self.delta_level_fu[0]*self.interstep
+                self.static_vector.append(static_payload + static_ox_t[0] + static_fu_t[0] + self.static_str[0] + self.static_str[1] + self.static_fu[1] + self.static_ox[1])
+                self.inertia_vector.append(inertia_payload + inertia_ox_t[0] + inertia_fu_t[0] + self.inertia_str[0] + self.inertia_str[1] + self.inertia_fu[1] + self.inertia_ox[1])
+            if  self.work_time[1] <= self.time_vector[m] < (self.work_time[1] + self.work_time[2]):
+                static_ox_t[1] = calculate_static(mass_level_ox[1], upper_level_ox[1] + down_level_ox[1])
+                static_fu_t[1] = calculate_static(mass_level_fu[1], upper_level_fu[1] + down_level_fu[1])
+                inertia_ox_t[1] = calculate_inertia(mass_level_ox[1], 
+                                                    upper_level_ox[1] + down_level_ox[1], 
+                                                    abs(upper_level_ox[1] - down_level_ox[1]),
+                                                    self.max_diameter)
+                inertia_fu_t[1] = calculate_inertia(mass_level_fu[1], 
+                                                    upper_level_fu[1] + down_level_fu[1], 
+                                                    abs(upper_level_ox[1] - down_level_ox[1]),
+                                                    self.max_diameter)
+                mass_level_ox[1] -= self.delta_mass_ox[1]*self.interstep
+                down_level_ox[1] -= self.delta_level_ox[1]*self.interstep
+                mass_level_fu[1] -= self.delta_mass_fu[1]*self.interstep
+                down_level_fu[1] -= self.delta_level_fu[1]*self.interstep
+                self.static_vector.append(static_payload + static_ox_t[1] + static_fu_t[1] + self.static_str[1])
+                self.inertia_vector.append(inertia_payload + inertia_ox_t[1] + inertia_fu_t[1] + self.inertia_str[1])
+            if  (self.work_time[1] + self.work_time[2]) <= self.time_vector[m]:
+                self.static_vector.append(static_payload)
+                self.inertia_vector.append(inertia_payload)
+            self.center_vector.append(self.static_vector[m]/self.mass_vector[m])
+            print(self.mass_vector[m])
 
-        
+        # max_static = self.static_vector.pop()
+
         self.alpha = attack.alpha(self.attack_coefs[0],
                                   self.attack_coefs[1],
                                   self.work_time[0],
@@ -221,15 +308,18 @@ class rocket_parser:
         return self.time_vector
     def vector_mass(self):
         return self.mass_vector
-    
+    def vector_static(self):
+        return self.static_vector
+    def vector_inertia(self):
+        return self.inertia_vector
+    def vector_center(self):
+        return self.center_vector
     def vector_thrust(self):
         return self.thrust_vector
-            
     def get_mass_from_time(self, time):
         for k in range(len(self.time_vector)):
             if abs(self.time_vector[k]-time)<self.interstep:
                 return self.mass_vector[k]
-    
     def get_thrust_from_time(self, time):
         for k in range(len(self.time_vector)):
             if abs(self.time_vector[k]-time)<self.interstep:
