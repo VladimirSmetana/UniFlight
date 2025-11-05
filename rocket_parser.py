@@ -53,6 +53,7 @@ class rocket_parser:
         self.diameters = r_data["diameters"]
         self.thrust = r_data["thrust"]
         self.attack_coefs = r_data["attack_coefs"]
+        self.thrust_ratio = r_data["thrust_ratio"] 
 
         self.propellant_mass = []
         self.delta_mass = []
