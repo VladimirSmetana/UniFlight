@@ -21,6 +21,7 @@ class Element:
         self.C_ind = 0.0
         self.CX = 0.0
         self.CY = 0.0
+        self.focus_position = 0.0
 
 class Geometry:
     PI = math.pi
@@ -49,7 +50,10 @@ class Geometry:
             self.elem[i].elem_length = l
         self.pre_calculations()
 
+
     def set_diameter(self, diameters):
+        print(diameters)
+        print(len(self.elem))
         for i, d in enumerate(diameters):
             if i == 0:
                 self.elem[i].upper_diameter = 0.0
@@ -61,13 +65,17 @@ class Geometry:
     def pre_calculations(self):
         self.full_length = 0.0
         self.full_round_area = 0.0
+        
+        current_position = 0.0
         for i, e in enumerate(self.elem):
             if i == 0:
                 e.base_line = 2 * self.PI * math.sqrt(e.elem_length ** 2 + (e.upper_diameter / 2) ** 2)
                 e.round_area = 2 * self.PI * e.elem_length * e.upper_diameter / 2 + self.PI * (e.elem_length ** 2)
+                e.focus_position = current_position + e.elem_length * 0.67
             else:
                 e.base_line = math.sqrt(e.elem_length ** 2 + ((e.lower_diameter - e.upper_diameter) ** 2) / 4)
                 e.round_area = self.PI * (e.upper_diameter + e.lower_diameter) * e.base_line / 2
+                e.focus_position = current_position + e.elem_length / 2
 
             e.upper_area = self.PI * (e.upper_diameter / 2) ** 2
             e.lower_area = self.PI * (e.lower_diameter / 2) ** 2
@@ -79,6 +87,7 @@ class Geometry:
 
             self.full_length += e.elem_length
             self.full_round_area += e.round_area
+            current_position += e.elem_length
 
             if e.upper_diameter < e.lower_diameter and abs(e.upper_diameter) > 0.1:
                 e.ratio = e.virtual_length / e.lower_diameter
@@ -416,6 +425,50 @@ class UnionStream(DragForce, LiftForce):
         self.E = 0.0
         self.CX = 0.0
         self.CY = 0.0
+        self.focus_position = 0.0
+        self.focus_relative = 0.0
+
+    def calculate_aerodynamic_focus(self, velocity, altitude, attack_angle):
+
+        A = atmosphere.atmosphere(altitude)
+        if A.get_SV() is None:
+            return 0.0, 0.0
+        
+        Mach = velocity / A.get_SV()
+        
+        self.calculate_CY(Mach)
+        self.E_pressure(attack_angle, Mach)
+        
+        total_moment = 0.0
+        total_normal_force = 0.0
+        
+        for i, elem in enumerate(self.elem):
+            if i == 0:
+                nose_cy = self.head_lift(Mach)
+                nose_normal_force = nose_cy * attack_angle
+                total_normal_force += nose_normal_force
+                total_moment += nose_normal_force * elem.focus_position
+                
+            else:
+                if elem.upper_diameter < elem.lower_diameter:
+                    big_rat = elem.ratio
+                    S_rat = elem.upper_area / elem.lower_area if elem.lower_area != 0 else 0
+                    elem_cy = self.triangle_lift(Mach, big_rat, i) - self.free_triangle_lift(i) * S_rat
+                    elem_normal_force = elem_cy * attack_angle * elem.upper_area / self.elem[-1].upper_area if self.elem[-1].upper_area != 0 else 0
+                else:
+                    elem_normal_force = elem.C_ind * attack_angle
+                
+                total_normal_force += elem_normal_force
+                total_moment += elem_normal_force * elem.focus_position
+        
+        if total_normal_force != 0:
+            self.focus_position = total_moment / total_normal_force
+            self.focus_relative = self.focus_position / self.full_length if self.full_length != 0 else 0
+        else:
+            self.focus_position = self.full_length / 2
+            self.focus_relative = 0.5
+        
+        return self.focus_position, self.focus_relative
 
     def calculate_CXY(self, velocity, altitude, attack_angle):
         A = atmosphere.atmosphere(altitude)
@@ -427,11 +480,13 @@ class UnionStream(DragForce, LiftForce):
             self.CX += (self.CY + self.E)
             self.CY -= self.rad(self.CY + self.E)
             self.CY *= attack_angle
+            
+            self.calculate_aerodynamic_focus(velocity, altitude, attack_angle)
 
 def main():
     parser = rp.rocket_parser(path.rocket_lib + "master_rocket.json")
     G = UnionStream()
-    G.set_elnumber(parser.get_block_number())
+    G.set_elnumber(parser.get_block_number()+1)
     G.set_diameter(parser.get_diameters())
     G.set_length(parser.get_part_length())
 
@@ -440,15 +495,33 @@ def main():
     altitudes = [0, 10, 20, 40, 60]  # км
 
     plt.figure(figsize=(14, 6))
-
-    for j in enumerate((attack_angles)):
-        angle_rad = attack_angles[j]/57.3
-        CX_list = []
-        CY_list = []
-        for vel in arrayVelocity:
-            G.calculate_CXY(vel, altitudes[j]*1000, angle_rad)
-            CX_list.append(G.CX)
-            CY_list.append(G.CY)
+    focus_data = []
+    for j, alt in enumerate(altitudes):
+        for angle_deg in attack_angles:
+            angle_rad = angle_deg / 57.3
+            CX_list = []
+            CY_list = []
+            focus_positions = []
+            focus_relative_list = []
+            
+            for vel in arrayVelocity:
+                G.calculate_CXY(vel, alt * 1000, angle_rad)
+                CX_list.append(G.CX)
+                CY_list.append(G.CY)
+                focus_positions.append(G.focus_position)
+                focus_relative_list.append(G.focus_relative)
+                
+                # Сохраняем данные для анализа
+                focus_data.append({
+                    'velocity': vel,
+                    'altitude': alt,
+                    'attack_angle': angle_deg,
+                    'focus_position': G.focus_position,
+                    'focus_relative': G.focus_relative,
+                    'CX': G.CX,
+                    'CY': G.CY
+                })
+        print(focus_data[-1])
 
         plt.subplot(1, 2, 1)
         plt.plot(arrayVelocity, CX_list, label=f'α={attack_angles[j]}°, H={altitudes[j]}km')

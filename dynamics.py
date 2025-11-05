@@ -1,16 +1,56 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import path
+import csv
 
+def read_aero_coefficients_from_csv(filename, N):
+    """
+    Чтение аэродинамических коэффициентов из CSV файла
+    """
+    # Инициализация массивов нулями
+    Cwv = np.zeros(N)
+    Cww = np.zeros(N)
+    Cwb = np.zeros(N)
+    Cvv = np.zeros(N)
+    Cvb = np.zeros(N)
+    Cvw = np.zeros(N)
+    Wind = np.zeros(N)
+    
+    try:
+        with open(filename, 'r') as csvfile:
+            reader = csv.DictReader(csvfile)
+            
+            i = 0
+            for row in reader:
+                if i >= N:
+                    break
+                    
+                Cvw[i] = float(row['Cyw'])
+                Cww[i] = float(row['Cww'])
+                Cwb[i] = float(row['Cwb'])
+                Cvv[i] = float(row['Cyy'])
+                Cvb[i] = -float(row['Cbs'])
+                Cvw[i] = float(row['Cyw'])
+                Wind[i] = float(row['wind']) 
+                
+                i += 1
+                
+        print(f"Успешно прочитано {i} строк из {filename}")
+        
+    except FileNotFoundError:
+        print(f"Файл {filename} не найден")
+    except Exception as e:
+        print(f"Ошибка при чтении файла {filename}: {e}")
+    
+    return Cwv, Cww, Cwb, Cvv, Cvb, Cvw, Wind
 
+# Основной код
 N = 3840
-Cwv = np.empty(N)
-Cww = np.empty(N)
-Cwb = np.empty(N)
-Cvv = np.empty(N)
-Cvb = np.empty(N)
-Cvw = np.empty(N)
-Wind = np.empty(N)
+
+# Инициализация массивов
+Cwv, Cww, Cwb, Cvv, Cvb, Cvw, Wind = read_aero_coefficients_from_csv("output/dynamic_coefs.csv", N)
+
+# Остальные массивы (не из файла)
 Ms = np.empty(N)
 W1 = np.empty(N)
 W2 = np.empty(N)
@@ -28,37 +68,9 @@ Cw2 = np.empty(N)
 Cw3 = np.empty(N)
 Cw4 = np.empty(N)
 Cw5 = np.empty(N)
-Cws = np.empty(N)
 
 mass_st = 14400
 l_1 = 23720
-
-
-
-with open(path.root_path + "Aero.txt", "r") as Aero:
-    for i in range(N):
-
-        try:
-            # Читаем и обрабатываем каждую строку
-            Cwv[i] = float(Aero.readline().strip())
-            Cww[i] = float(Aero.readline().strip())
-            Cwb[i] = float(Aero.readline().strip())
-            Cvv[i] = float(Aero.readline().strip())
-            Cvb[i] = -float(Aero.readline().strip())
-            Cvw[i] = float(Aero.readline().strip())
-            Wind[i] = float(Aero.readline().strip())
-        except ValueError as e:
-            # Выводим ошибку и строку, которая вызвала её
-            #print(f"Ошибка преобразования строки на итерации {i}: {e}")
-            #print(f"Непрочитанное значение: '{Aero.readline().strip()}'")  # Выводим непрочитанное значение
-            # Задаем значение по умолчанию
-            Cwv[i] = 0.0
-            Cww[i] = 0.0
-            Cwb[i] = 0.0
-            Cvv[i] = 0.0
-            Cvb[i] = 0.0
-            Cvw[i] = 0.0
-            Wind[i] = 0.0
 
 h = 0.1
 uc = 0
@@ -90,7 +102,6 @@ a0 = 1.32
 a1 = 1.7
 a2 = 0.0004
 a3 = 10*a2
-
 
 c = 0
 
@@ -148,7 +159,7 @@ for i in range(N):
     if uc < 0 and uc > -0.3/57.3:
        uc = -0.3/57.3
 
-    if t<52:
+    if t<100:
         Y.append(float(v))
         X.append(float(t))
 

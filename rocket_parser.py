@@ -250,6 +250,14 @@ class rocket_parser:
         for k in range(len(self.time_vector)):
             if abs(self.time_vector[k]-time)<self.interstep:
                 return self.thrust_vector[k]
+    def get_inertia_from_time(self, time):
+        for k in range(len(self.inertia_vector)):
+            if abs(self.time_vector[k]-time)<self.interstep:
+                return self.inertia_vector[k]    
+    def get_center_from_time(self, time):
+        for k in range(len(self.center_vector)):
+            if abs(self.time_vector[k]-time)<self.interstep:
+                return self.center_vector[k]       
 
     def get_propellant_from_time(self, time):
         for k in range(len(self.time_vector)):
