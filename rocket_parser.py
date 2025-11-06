@@ -5,10 +5,15 @@ import constants
 
 def read_propellant_density(propellant_type):
     density_map = {
-        "kerosene": constants.density.kerosene.value,
-        "liquid_oxygen": constants.density.liquid_oxygen.value,
-        "tetroxide": constants.density.tetroxide.value,
-        "heptyl": constants.density.heptyl.value,
+        "LOX" : constants.density.LOX.value,
+        "RP-1": constants.density.RP_1.value,
+        "RG_1": constants.density.RG_1.value,
+        "UDMH": constants.density.UDMH.value,
+        "N2O4": constants.density.N2O4.value,
+        "HTPB": constants.density.HTPB.value,
+        "AP"  : constants.density.AP.value,
+        "UH25": constants.density.UH25.value,
+        "CH4" : constants.density.CH4.value
     }
     return density_map.get(propellant_type, 0)
 
@@ -23,6 +28,7 @@ class rocket_parser:
         with open(filename, 'r') as r_file:
             r_data = json.load(r_file)
 
+        self.name = r_data["name"]
         self.max_diameter = r_data["maximum_diameter"]
         self.head_length = r_data["head_length"]
         self.block_length = r_data["block_length"]

@@ -48,7 +48,7 @@
     "fu": [[47, 62],[19, 23]]
   },
   "integration_step": 0.1,
-  "fuel": "kerosene",
-  "oxidizer": "liquid_oxygen",
+  "fuel": "RG_1",
+  "oxidizer": "LOX",
   "attack_coefs": [4.32, 0.25]
 }

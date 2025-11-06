@@ -1,0 +1,53 @@
+{
+  "name": "Electron",
+  "block_number": 2,
+  "payload_mass": 300,
+  "payload_structure": 50,
+  "block_mass": [
+    12500,
+    2500
+  ],
+  "components_ratio": 2.05,
+  "thrust_ratio": 0.8,
+  "diameters": [1.2, 1.2, 1.2],
+  "maximum_diameter": 1.2,
+  "head_length": 2.5,
+  "block_length": [
+    15.1,
+    2.4
+  ],
+  "exhaust_velocity": [
+    3110,
+    3500
+  ],
+  "thrust": [
+    224000,
+    26000
+  ],
+  "structural_values": [
+    20,
+    25
+  ],
+  "rocket_sections": [
+    2.5,   
+    0.3,   
+    0.8,   
+    1.2,   
+    1.0,   
+    0.2,   
+    7.0,   
+    1.5,   
+    4.0,   
+    1.0,   
+    0.5    
+  ],
+  "sector_index": {
+    "payload": [0, 2.5],
+    "ox": [[13.0, 20.0], [6.6, 7.6]],
+    "fu": [[21.5, 25.5], [7.6, 8.6]]
+  },
+  "integration_step": 0.1,
+  "fuel": "RP-1",
+  "oxidizer": "LOX", 
+  "attack_coefs": [6.0, 0.4]
+}

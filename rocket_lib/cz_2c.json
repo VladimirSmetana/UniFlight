@@ -1,0 +1,54 @@
+{
+  "name": "Long March 2C",
+  "block_number": 2,
+  "payload_mass": 3850,
+  "payload_structure": 800,
+  "block_mass": [
+    283000,
+    91000
+  ],
+  "components_ratio": 2.5,
+  "thrust_ratio": 0.6,
+  "diameters": [3.35, 3.35, 3.35],
+  "maximum_diameter": 3.35,
+  "head_length": 8.4,
+  "block_length": [
+    29.4,
+    11.4
+  ],
+  "exhaust_velocity": [
+    2890,
+    3020
+  ],
+  "thrust": [
+    3475000,
+    832000
+  ],
+  "structural_values": [
+    6,
+    8
+  ],
+  "rocket_sections": [
+    8.4,
+    0.8,
+    1.2,
+    3.0,
+    5.0,
+    2.0,
+    1.0,
+    15.0,
+    2.5,
+    8.0,
+    1.8,
+    0.5
+  ],
+  "sector_index": {
+    "payload": [0, 8.4],
+    "ox": [[21.4, 36.4], [13.4, 18.4]],
+    "fu": [[38.9, 46.9], [18.4, 20.4]]
+  },
+  "integration_step": 0.1,
+  "fuel": "UDMH",
+  "oxidizer": "N2O4",
+  "attack_coefs": [3.8, 0.2]
+}
