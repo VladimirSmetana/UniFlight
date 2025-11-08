@@ -52,8 +52,6 @@ class Geometry:
 
 
     def set_diameter(self, diameters):
-        print(diameters)
-        print(len(self.elem))
         for i, d in enumerate(diameters):
             if i == 0:
                 self.elem[i].upper_diameter = 0.0

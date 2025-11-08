@@ -196,10 +196,6 @@ class rocket_parser:
         
         self.full_time = sum(self.work_time)
         
-        self.alpha = attack.alpha(self.attack_coefs[0],
-                                  self.attack_coefs[1],
-                                  self.work_time[0],
-                                  False)
 
     def get_block_number(self):
         return self.block_number

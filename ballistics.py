@@ -7,8 +7,17 @@ import atmosphere as atmo
 import aerodynamics as aero
 import math
 from scipy.integrate import solve_ivp
+import attack
 
-parser = rp.rocket_parser(path.rocket_lib + "master.json")
+parser = rp.rocket_parser(path.rocket_lib + "falcon9.json")
+
+alpha = attack.alpha(parser.attack_coefs[0],
+                     parser.attack_coefs[1],
+                     parser.work_time[0],
+                     False)
+
+def get_attack(vel, time):
+    return alpha.calculate_alpha(vel, time)
 
 def write_arrays_to_csv(filename, **arrays):
     if not arrays:
@@ -85,7 +94,7 @@ class ballistics:
                 print(f"Warning: inertia is None at time {time}, using default value 0.1")
                 self.inertia = 0.1
                 
-            self.attack  = parser.get_attack(self.vel, time)*math.pi/180
+            self.attack  = get_attack(self.vel, time)*math.pi/180
             self.G.calculate_CXY(self.vel, self.alt, self.attack)
 
             self.atm = atmo.atmosphere(self.alt)
