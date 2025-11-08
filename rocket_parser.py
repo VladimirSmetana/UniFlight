@@ -97,13 +97,7 @@ class rocket_parser:
             self.delta_level_ox.append(self.delta_mass_ox[k] / self.oxidizer_density / self.maximum_area)
             self.delta_level_fu.append(self.delta_mass_fu[k] / self.fuel_density / self.maximum_area)
 
-        static_payload = calculate_static(self.payload + self.payload_str, 
-                                         self.sector_index_payload[0] + self.sector_index_payload[-1])
-        inertia_payload = calculate_inertia(self.payload + self.payload_str, 
-                                           self.sector_index_payload[0] + self.sector_index_payload[-1], 
-                                           abs(self.sector_index_payload[0] - self.sector_index_payload[-1]), 
-                                           self.max_diameter)
-
+        # Инициализация переменных для расчета
         time = 0
         mass_t = self.full_mass
         thrust_t = self.thrust[0]
@@ -114,22 +108,34 @@ class rocket_parser:
         current_level_fu = [fu[-1] for fu in self.sector_index_fu]
 
         active_stage = 0
+        discarded_stages = []  # Отслеживаем отброшенные ступени
         
         while active_stage < self.block_number:
             stage_end_mass = self.stage_mass[active_stage] - self.propellant_mass[active_stage]
             
             while mass_t > stage_end_mass and active_stage < self.block_number:
-                current_static = static_payload
-                current_inertia = inertia_payload
+                current_static = 0#static_payload
+                current_inertia = 0#inertia_payload
                 
+                # Учитываем только активные и еще не отброшенные ступени
                 for k in range(self.block_number):
+                    if k in discarded_stages:
+                        continue  # Пропускаем отброшенные ступени
+                        
                     shoulder_str = self.sector_index_ox[k][0] + self.sector_index_fu[k][-1]
                     shoulder_str_diff = abs(self.sector_index_ox[k][0] - self.sector_index_fu[k][-1])
+                    
+                    # Структурная масса учитывается всегда для всех ступеней, кроме отброшенных
                     current_static += calculate_static(self.structural_mass[k], shoulder_str)
                     current_inertia += calculate_inertia(self.structural_mass[k], shoulder_str, shoulder_str_diff, self.max_diameter)
                 
+                # Учет компонентов топлива
                 for k in range(active_stage, self.block_number):
+                    if k in discarded_stages:
+                        continue  # Пропускаем отброшенные ступени
+                        
                     if k == active_stage:
+                        # Активная ступень - используем текущие уровни
                         shoulder_ox = self.sector_index_ox[k][0] + current_level_ox[k]
                         shoulder_fu = self.sector_index_fu[k][0] + current_level_fu[k]
                         current_static += calculate_static(current_mass_ox[k], shoulder_ox)
@@ -141,6 +147,7 @@ class rocket_parser:
                                                            abs(self.sector_index_fu[k][0] - current_level_fu[k]),
                                                            self.max_diameter)
                     else:
+                        # Неактивные ступени - полные баки
                         shoulder_ox = self.sector_index_ox[k][0] + self.sector_index_ox[k][-1]
                         shoulder_fu = self.sector_index_fu[k][0] + self.sector_index_fu[k][-1]
                         current_static += calculate_static(self.mass_ox[k], shoulder_ox)
@@ -152,6 +159,7 @@ class rocket_parser:
                                                            abs(self.sector_index_fu[k][0] - self.sector_index_fu[k][-1]),
                                                            self.max_diameter)
                 
+                # Сохраняем векторы
                 self.mass_vector.append(mass_t)
                 self.time_vector.append(time)
                 self.thrust_vector.append(thrust_t)
@@ -159,6 +167,7 @@ class rocket_parser:
                 self.inertia_vector.append(current_inertia)
                 self.center_vector.append(current_static / mass_t if mass_t > 0 else 0)
                 
+                # Обновляем параметры
                 mass_t -= self.delta_mass[active_stage] * self.interstep
                 current_mass_ox[active_stage] -= self.delta_mass_ox[active_stage] * self.interstep
                 current_mass_fu[active_stage] -= self.delta_mass_fu[active_stage] * self.interstep
@@ -167,19 +176,23 @@ class rocket_parser:
                 
                 time += self.interstep
             
+            # Отбрасываем отработавшую ступень
+            discarded_stages.append(active_stage)
             mass_t -= self.structural_mass[active_stage]
             active_stage += 1
+            
             if active_stage < self.block_number:
                 thrust_t = self.thrust[active_stage]
             else:
                 thrust_t = 0
         
-        self.mass_vector.append(mass_t)
-        self.time_vector.append(time)
-        self.thrust_vector.append(thrust_t)
-        self.static_vector.append(static_payload)
-        self.inertia_vector.append(inertia_payload)
-        self.center_vector.append(static_payload / mass_t if mass_t > 0 else 0)
+        # Финальная точка
+        # self.mass_vector.append(mass_t)
+        # self.time_vector.append(time)
+        # self.thrust_vector.append(thrust_t)
+        # self.static_vector.append(static_payload)
+        # self.inertia_vector.append(inertia_payload)
+        # self.center_vector.append(static_payload / mass_t if mass_t > 0 else 0)
         
         self.full_time = sum(self.work_time)
         
