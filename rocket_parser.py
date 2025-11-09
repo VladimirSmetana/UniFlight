@@ -279,5 +279,3 @@ class rocket_parser:
             if abs(self.time_vector[k]-time)<self.interstep:
                 return self.thrust_vector[k]
 
-    def get_attack(self, vel, time):
-        return self.alpha.calculate_alpha(vel, time)

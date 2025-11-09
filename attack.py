@@ -24,9 +24,20 @@ class alpha:
                     z = math.pi * (time - self.septime)
                     che = (time - self.septime) + 0.25 * (self.septime + 60 - time)
                     ans = 90 * (math.sin(z / che) ** 2)
-        return ans
+        
+        # Применяем ограничения в зависимости от времени
+        if time <= self.septime:
+            # На активном участке - строгое ограничение до -5°
+            return max(-5.0, ans)
+        else:
+            # На пассивном участке - без ограничений (или мягкое ограничение)
+            return min(35.0, ans)  # Можно добавить max(-90, min(90, ans)) если нужно
 
 # Пример использования
 if __name__ == "__main__":
     a = alpha(1.0, 0.5, 100.0, True)
-    print(a.calculate_alpha(120.0, 95.0))
+    
+    # Тестируем разные случаи
+    print(f"До septime (t=95): {a.calculate_alpha(120.0, 95.0):.2f}°")
+    print(f"После septime (t=105): {a.calculate_alpha(120.0, 105.0):.2f}°")
+    print(f"До septime с большим отрицательным значением: {a.calculate_alpha(200.0, 50.0):.2f}°")

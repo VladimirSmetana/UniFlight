@@ -9,7 +9,11 @@
   ],
   "components_ratio": 3.5,
   "thrust_ratio": 0.5,
-  "diameters": [4.1, 4.1, 4.1],
+  "diameters": [
+    4.1,
+    4.1,
+    4.1
+  ],
   "maximum_diameter": 4.1,
   "head_length": 11,
   "block_length": [
@@ -43,12 +47,36 @@
     4.9
   ],
   "sector_index": {
-    "payload": [0,11],
-    "ox": [[26, 46],[12, 18]],
-    "fu": [[47, 62],[19, 23]]
+    "payload": [
+      0,
+      11
+    ],
+    "ox": [
+      [
+        26,
+        46
+      ],
+      [
+        12,
+        18
+      ]
+    ],
+    "fu": [
+      [
+        47,
+        62
+      ],
+      [
+        19,
+        23
+      ]
+    ]
   },
-  "integration_step": 0.1,
+  "integration_step": 1,
   "fuel": "RG_1",
   "oxidizer": "LOX",
-  "attack_coefs": [4.32, 0.25]
+  "attack_coefs": [
+    4.18,
+    0.25
+  ]
 }

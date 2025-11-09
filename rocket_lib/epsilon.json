@@ -1,37 +1,32 @@
 {
   "name": "Epsilon",
-  "block_number": 3,
+  "block_number": 2,
   "payload_mass": 1500,
   "payload_structure": 300,
   "block_mass": [
     75000,
-    28000,
-    10000
+    28000
   ],
-  "components_ratio": 0,
-  "thrust_ratio": 0.0,
-  "diameters": [2.6, 2.6, 2.6, 2.6],
+  "components_ratio": 0.75,
+  "thrust_ratio": 0.5,
+  "diameters": [2.6, 2.6, 2.6],
   "maximum_diameter": 2.6,
   "head_length": 6.5,
   "block_length": [
     10.3,
-    5.3,
-    4.6
+    5.3
   ],
   "exhaust_velocity": [
     2800,
-    2950,
-    3050
+    2950
   ],
   "thrust": [
-    2270000,
-    870000,
-    320000
+    2150000,
+    445000
   ],
   "structural_values": [
     12,
-    15,
-    18
+    15
   ],
   "rocket_sections": [
     6.5,
@@ -50,8 +45,8 @@
     "ox": [[16.6, 25.1], [11.8, 16.0], [8.5, 11.3]],
     "fu": [[16.6, 25.1], [11.8, 16.0], [8.5, 11.3]]
   },
-  "integration_step": 0.1,
+  "integration_step": 1,
   "fuel": "HTPB",
   "oxidizer": "AP",
-  "attack_coefs": [5.5, 0.35]
+  "attack_coefs": [3.0, 0.1]
 }

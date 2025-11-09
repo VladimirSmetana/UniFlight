@@ -46,8 +46,8 @@
     "ox": [[70, 100], [42, 67]],
     "fu": [[105, 130], [27, 42]]
   },
-  "integration_step": 0.1,
+  "integration_step": 1,
   "fuel": "CH4",
   "oxidizer": "LOX",
-  "attack_coefs": [5.0, 0.2]
+  "attack_coefs": [3.68880768, 0.21378464]
 }
