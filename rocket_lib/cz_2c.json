@@ -72,11 +72,11 @@
       ]
     ]
   },
-  "integration_step": 1,
+  "integration_step": 2,
   "fuel": "UDMH",
   "oxidizer": "N2O4",
   "attack_coefs": [
-    2.727722073269833,
-    0.10733451020080853
+    2.71037118885672,
+    0.14745919558308052
   ]
 }
