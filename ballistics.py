@@ -13,6 +13,7 @@ import numpy as np
 import json
 import warnings
 from collections import deque
+import matplotlib.pyplot as plt
 
 # Глобальные переменные для хранения лучших коэффициентов
 best_coefficients = None
@@ -30,6 +31,9 @@ Cwy_list = []
 Cwb_list = []
 Csb_list = []
 attack_list = []
+vel_list = []
+traj_list = []
+alt_list = []
 time_list = []
 wind_list = []
 
@@ -37,22 +41,24 @@ rocket = "master"
 parser = rp.rocket_parser(path.rocket_lib + rocket + ".json")
 
 # Диапазоны коэффициентов согласно требованиям
-COEF1_RANGE = (0.3, 4.0)    # Первый коэффициент: 0.3 - 4.0
-COEF2_RANGE = (0.01, 0.3)   # Второй коэффициент: 0.01 - 0.3
+COEF1_RANGE = (0.1, 4.5)    # Первый коэффициент: 0.1 - 4.5
+COEF2_RANGE = (0.02, 0.50)   # Второй коэффициент: 0.01 - 0.5
 
 # Целевые параметры
-TARGET_VELOCITY = 7800
+TARGET_VELOCITY = 7780
 TARGET_ALTITUDE_MIN = 198000
 TARGET_ALTITUDE_MAX = 210000
 TARGET_ANGLE_RANGE = 7
+TARGET_FINAL_ATTACK_MIN = 1  # Минимальный финальный угол атаки
 
-def check_target_achieved(final_velocity, final_altitude, final_angle):
+def check_target_achieved(final_velocity, final_altitude, final_angle, final_attack):
     """Проверяет, достигнуты ли целевые параметры"""
     velocity_ok = final_velocity >= TARGET_VELOCITY
     altitude_ok = TARGET_ALTITUDE_MIN <= final_altitude <= TARGET_ALTITUDE_MAX
     angle_ok = abs(final_angle) <= TARGET_ANGLE_RANGE
+    attack_ok = abs(final_attack) >= TARGET_FINAL_ATTACK_MIN
     
-    return velocity_ok and altitude_ok and angle_ok
+    return velocity_ok and altitude_ok and angle_ok and attack_ok
 
 def update_rocket_json(new_coefficients):
     """Обновляет коэффициенты в JSON файле ракеты"""
@@ -77,7 +83,7 @@ def update_rocket_json(new_coefficients):
         return False
 
 def improved_objective_function(coefs):
-    """Улучшенная функция стоимости с проверкой достижения цели"""
+    """Улучшенная функция стоимости с проверкой достижения цели и требованием к финальному углу атаки"""
     global best_score, best_coefficients, best_simulation_data, target_achieved
     
     # Если цель уже достигнута, возвращаем наилучший score
@@ -94,10 +100,10 @@ def improved_objective_function(coefs):
         score, final_params, simulation_data = run_simulation_and_evaluate_detailed(coefs)
         
         if final_params:
-            final_velocity, final_altitude, final_angle, max_attack = final_params
+            final_velocity, final_altitude, final_angle, max_attack, final_attack = final_params
             
             # Проверяем, достигнута ли цель
-            if check_target_achieved(final_velocity, final_altitude, final_angle):
+            if check_target_achieved(final_velocity, final_altitude, final_angle, final_attack):
                 target_achieved = True
                 best_score = 0
                 best_coefficients = coefs.copy()
@@ -107,7 +113,8 @@ def improved_objective_function(coefs):
                 print(f"Коэффициенты: {coefs}")
                 print(f"Скорость: {final_velocity:.1f} м/с")
                 print(f"Высота: {final_altitude/1000:.1f} км")
-                print(f"Угол: {final_angle:.1f}°")
+                print(f"Угол траектории: {final_angle:.1f}°")
+                print(f"Финальный угол атаки: {final_attack:.1f}°")
                 
                 # Немедленно обновляем JSON файл
                 update_rocket_json(coefs.tolist() if hasattr(coefs, 'tolist') else coefs)
@@ -115,17 +122,50 @@ def improved_objective_function(coefs):
                 return 0  # Идеальный score
             
             # Целевые параметры
-            target_velocity = 7800
+            target_velocity = TARGET_VELOCITY
             target_altitude = 200000
             target_angle = 0
             
             # Базовые ошибки (нормализованные)
-            velocity_error = max(0, target_velocity - final_velocity) / target_velocity
-            altitude_error = abs(final_altitude - target_altitude) / target_altitude
+            # ОШИБКА СКОРОСТИ: строгий штраф за скорости ниже целевой, НО НЕТ ШТРАФА за скорости выше целевой
+            if final_velocity < target_velocity:
+                velocity_error = (target_velocity - final_velocity) / target_velocity
+            else:
+                velocity_error = 0  # Нет ошибки если скорость выше целевой
+            
+            # ОШИБКА ВЫСОТЫ: штраф за отклонение от целевого диапазона
+            if final_altitude < TARGET_ALTITUDE_MIN:
+                altitude_error = (TARGET_ALTITUDE_MIN - final_altitude) / TARGET_ALTITUDE_MIN
+            elif final_altitude > TARGET_ALTITUDE_MAX:
+                altitude_error = (final_altitude - TARGET_ALTITUDE_MAX) / TARGET_ALTITUDE_MAX
+            else:
+                altitude_error = 0
+            
+            # Ошибка угла траектории
             angle_error = min(abs(final_angle - target_angle), abs(final_angle - target_angle + 360)) / 180
             
+            # ОШИБКА ПО ФИНАЛЬНОМУ УГЛУ АТАКИ: 
+            # - Штраф за углы меньше минимального
+            # - НУЛЕВАЯ ошибка для углов >= минимального
+            # - ОТРИЦАТЕЛЬНАЯ ошибка (бонус) для углов больше 5 градусов
+            if abs(final_attack) < TARGET_FINAL_ATTACK_MIN:
+                attack_error = (TARGET_FINAL_ATTACK_MIN - abs(final_attack)) / TARGET_FINAL_ATTACK_MIN
+            else:
+                attack_error = 0  # Нет ошибки если достигнут минимум
+                
+                # БОНУС за большие углы атаки
+                if abs(final_attack) >= 5.0:
+                    # Сильный бонус за углы от 5° и выше
+                    attack_error = -0.3 * (abs(final_attack) - 5.0) / 10.0
+                elif abs(final_attack) >= 3.0:
+                    # Средний бонус за углы от 3° до 5°
+                    attack_error = -0.1 * (abs(final_attack) - 3.0) / 2.0
+                elif abs(final_attack) >= 2.0:
+                    # Малый бонус за углы от 2° до 3°
+                    attack_error = -0.05 * (abs(final_attack) - 2.0) / 1.0
+            
             # Умные веса в зависимости от прогресса
-            base_score = velocity_error + 2.0 * altitude_error + 1.5 * angle_error
+            base_score = velocity_error + 2.0 * altitude_error + 1.5 * angle_error + 0.8 * attack_error
             
             # Дополнительные штрафы
             penalties = 0
@@ -138,13 +178,13 @@ def improved_objective_function(coefs):
             if abs(final_angle) > 45:  # Слишком вертикальный полет
                 penalties += 3.0 * (abs(final_angle) / 90)
             
-            # Штраф за слишком маленькую скорость
+            # Штраф за слишком маленькую скорость (очень строгий)
             if final_velocity < 5000:
-                penalties += 10.0
+                penalties += 20.0
             
-            # Штраф за слишком большую атаку
-            if abs(max_attack) > 15:
-                penalties += 2.0 * (abs(max_attack) / 15)
+            # Штраф за слишком большую атаку (но менее строгий, так как хотим большую финальную атаку)
+            if abs(max_attack) > 25:
+                penalties += 1.0 * (abs(max_attack) / 25)
             
             # Штраф за падение
             if final_altitude < 0:
@@ -171,12 +211,22 @@ def improved_objective_function(coefs):
                     'velocity': final_velocity,
                     'altitude': final_altitude,
                     'angle': final_angle,
-                    'max_attack': max_attack
+                    'max_attack': max_attack,
+                    'final_attack': final_attack
                 })
+                
+                # Детальное сообщение о бонусе за угол атаки
+                bonus_info = ""
+                if abs(final_attack) >= 5.0:
+                    bonus_info = f" 🎉 БОНУС за большой угол атаки!"
+                elif abs(final_attack) >= 3.0:
+                    bonus_info = f" 👍 Бонус за угол атаки!"
+                elif abs(final_attack) >= 2.0:
+                    bonus_info = f" ✅ Угол атаки хороший!"
                 
                 print(f"🎯 УЛУЧШЕНИЕ: coefs={coefs}, v={final_velocity:.1f} м/с, "
                       f"h={final_altitude/1000:.1f} км, angle={final_angle:.1f}°, "
-                      f"score={total_score:.4f}")
+                      f"final_α={final_attack:.1f}°, score={total_score:.4f}{bonus_info}")
             
             return total_score
         else:
@@ -193,7 +243,7 @@ def run_simulation_and_evaluate_detailed(coefs):
         
         def get_attack(vel, time):
             alpha_val = alpha_obj.calculate_alpha(vel, time)
-            return max(-20, min(20, alpha_val))  # Увеличил допустимый диапазон атаки
+            return max(-30, min(30, alpha_val))  # Увеличил допустимый диапазон атаки для больших финальных значений
         
         # Функция события падения
         def fall_event(t, y, parser, get_attack_func):
@@ -227,6 +277,7 @@ def run_simulation_and_evaluate_detailed(coefs):
             final_altitude = sol.y[3][-1]
             final_angle = sol.y[1][-1] * 180/math.pi
             max_attack = max(temp_attack_list) if temp_attack_list else 0
+            final_attack = temp_attack_list[-1] if temp_attack_list else 0
             
             simulation_data = {
                 'time': sol.t,
@@ -236,7 +287,7 @@ def run_simulation_and_evaluate_detailed(coefs):
                 'attack': temp_attack_list
             }
             
-            return 0, (final_velocity, final_altitude, final_angle, max_attack), simulation_data
+            return 0, (final_velocity, final_altitude, final_angle, max_attack, final_attack), simulation_data
         else:
             return 1000.0, None, None
             
@@ -252,16 +303,18 @@ def check_current_coefficients():
     score, final_params, _ = run_simulation_and_evaluate_detailed(parser.attack_coefs)
     
     if final_params:
-        final_velocity, final_altitude, final_angle, max_attack = final_params
+        final_velocity, final_altitude, final_angle, max_attack, final_attack = final_params
         
         velocity_ok = final_velocity >= TARGET_VELOCITY
         altitude_ok = TARGET_ALTITUDE_MIN <= final_altitude <= TARGET_ALTITUDE_MAX
         angle_ok = abs(final_angle) <= TARGET_ANGLE_RANGE
+        attack_ok = abs(final_attack) >= TARGET_FINAL_ATTACK_MIN
         
         print(f"\nПроверка целевых параметров с коэффициентами {parser.attack_coefs}:")
         print(f"Скорость: {final_velocity:.1f} м/с {'✅' if velocity_ok else '❌'}")
         print(f"Высота: {final_altitude/1000:.1f} км {'✅' if altitude_ok else '❌'}")
-        print(f"Угол: {final_angle:.1f}° {'✅' if angle_ok else '❌'}")
+        print(f"Угол траектории: {final_angle:.1f}° {'✅' if angle_ok else '❌'}")
+        print(f"Финальный угол атаки: {final_attack:.1f}° {'✅' if attack_ok else '❌'}")
         print(f"Макс. атака: {max_attack:.1f}°")
         
         # Проверка границ коэффициентов
@@ -269,7 +322,7 @@ def check_current_coefficients():
                          COEF2_RANGE[0] <= parser.attack_coefs[1] <= COEF2_RANGE[1])
         print(f"Коэффициенты в допустимом диапазоне: {'✅' if coefs_in_range else '❌'}")
         
-        if velocity_ok and altitude_ok and angle_ok and coefs_in_range:
+        if velocity_ok and altitude_ok and angle_ok and attack_ok and coefs_in_range:
             print("\n✅ Текущие коэффициенты УЖЕ обеспечивают целевые параметры!")
             global target_achieved, best_coefficients, best_score
             target_achieved = True
@@ -413,7 +466,7 @@ def optimize_coefficients_if_needed():
         for i, result in enumerate(sorted_history):
             print(f"{i+1}. coefs={result['coefs']}, v={result['velocity']:.1f} м/с, "
                   f"h={result['altitude']/1000:.1f} км, angle={result['angle']:.1f}°, "
-                  f"score={result['score']:.4f}")
+                  f"final_α={result['final_attack']:.1f}°, score={result['score']:.4f}")
     
     return best_coefficients
 
@@ -425,13 +478,28 @@ def analyze_trajectory(sol, coefs):
     final_velocity = sol.y[2][-1]
     final_altitude = sol.y[3][-1]
     final_angle = sol.y[1][-1] * 180/math.pi
+    final_attack = attack_list[-1] if attack_list else 0
     
     print(f"\n📈 АНАЛИЗ ТРАЕКТОРИИ:")
     print(f"Финальная скорость: {final_velocity:.1f} м/с")
     print(f"Финальная высота: {final_altitude/1000:.1f} км")
-    print(f"Финальный угол: {final_angle:.1f}°")
+    print(f"Финальный угол траектории: {final_angle:.1f}°")
+    print(f"Финальный угол атаки: {final_attack:.1f}°")
     
-    # Анализ проблем
+    # Анализ угла атаки с поощрением больших значений
+    if abs(final_attack) < TARGET_FINAL_ATTACK_MIN:
+        print("❌ ПРОБЛЕМА: Слишком маленький финальный угол атаки")
+        print("   Рекомендация: Увеличить коэффициенты управления углом атаки")
+    elif abs(final_attack) < 2.0:
+        print("✅ Финальный угол атаки достиг минимума")
+    elif abs(final_attack) < 5.0:
+        print("✅ ХОРОШО: Финальный угол атаки > 2°")
+        print("   Рекомендация: Можно увеличить для лучшей стабильности")
+    else:
+        print("🎉 ОТЛИЧНО: Большой финальный угол атаки (> 5°)!")
+        print("   Это обеспечивает лучшую стабильность и управляемость")
+    
+    # Остальной анализ проблем
     target_altitude = 200000
     if final_altitude > target_altitude + 100000:
         print("❌ ПРОБЛЕМА: Слишком большая высота")
@@ -441,17 +509,18 @@ def analyze_trajectory(sol, coefs):
         print("   Рекомендация: Уменьшить коэффициент наклона траектории")
     
     if abs(final_angle) > 45:
-        print("❌ ПРОБЛЕМА: Слишком большой угол")
+        print("❌ ПРОБЛЕМА: Слишком большой угол траектории")
         print("   Рекомендация: Настроить коэффициенты управления углом")
 
 def final_simulation_with_coefficients(coefs, description=""):
     """Запускает финальную симуляцию с заданными коэффициентами"""
     global Cbs_list, Cyw_list, Cww_list, Cyy_list, Cwy_list, Cwb_list, Csb_list
     global attack_list, time_list, wind_list
+    global vel_list, traj_list, alt_list
     
     # Очищаем глобальные списки
     lists_to_clear = [Cbs_list, Cyw_list, Cww_list, Cyy_list, Cwy_list, Cwb_list, 
-                     Csb_list, attack_list, time_list, wind_list]
+                     Csb_list, attack_list, time_list, wind_list, vel_list, traj_list, alt_list]
     for lst in lists_to_clear:
         lst.clear()
     
@@ -504,10 +573,12 @@ def final_simulation_with_coefficients(coefs, description=""):
                 final_velocity = sol.y[2][-1]
                 final_altitude = sol.y[3][-1]
                 final_angle = sol.y[1][-1] * 180/math.pi
+                final_attack = attack_list[-1] if attack_list else 0
                 
                 print(f"Конечная скорость: {final_velocity:.2f} м/с")
                 print(f"Конечная высота: {final_altitude/1000:.2f} км")
                 print(f"Конечный угол траектории: {final_angle:.2f}°")
+                print(f"Конечный угол атаки: {final_attack:.2f}°")
             
             if attack_list:
                 print(f"Максимальная атака: {max(attack_list):.2f}°")
@@ -515,36 +586,42 @@ def final_simulation_with_coefficients(coefs, description=""):
             
             # Проверка целевых параметров
             if not fall_detected:
-                target_velocity = 7800
-                target_altitude_min = 198000
-                target_altitude_max = 210000  
-                target_angle_range = 7
+                target_velocity = TARGET_VELOCITY
+                target_altitude_min = TARGET_ALTITUDE_MIN
+                target_altitude_max = TARGET_ALTITUDE_MAX  
+                target_angle_range = TARGET_ANGLE_RANGE
                 
                 final_velocity = sol.y[2][-1]
                 final_altitude = sol.y[3][-1]
                 final_angle = sol.y[1][-1] * 180/math.pi
+                final_attack = attack_list[-1] if attack_list else 0
                 
                 print(f"\n=== ПРОВЕРКА ЦЕЛЕВЫХ ПАРАМЕТРОВ ===")
                 print(f"Целевая скорость: > {target_velocity} м/с")
                 print(f"Достигнутая скорость: {final_velocity:.2f} м/с - {'✅' if final_velocity >= target_velocity else '❌'}")
                 
-                print(f"Целевая высота: 200-210 км")
+                print(f"Целевая высота: {target_altitude_min/1000:.1f}-{target_altitude_max/1000:.1f} км")
                 print(f"Достигнутая высота: {final_altitude/1000:.2f} км - "
                       f"{'✅' if target_altitude_min <= final_altitude <= target_altitude_max else '❌'}")
                 
-                print(f"Целевой угол: 0±{target_angle_range}°")
-                print(f"Достигнутый угол: {final_angle:.2f}° - "
+                print(f"Целевой угол траектории: 0±{target_angle_range}°")
+                print(f"Достигнутый угол траектории: {final_angle:.2f}° - "
                       f"{'✅' if abs(final_angle) <= target_angle_range else '❌'}")
+                
+                print(f"Целевой финальный угол атаки: > {TARGET_FINAL_ATTACK_MIN}°")
+                print(f"Достигнутый финальный угол атаки: {final_attack:.2f}° - "
+                      f"{'✅' if abs(final_attack) >= TARGET_FINAL_ATTACK_MIN else '❌'}")
                 
                 velocity_ok = final_velocity >= target_velocity
                 altitude_ok = target_altitude_min <= final_altitude <= target_altitude_max
                 angle_ok = abs(final_angle) <= target_angle_range
+                attack_ok = abs(final_attack) >= TARGET_FINAL_ATTACK_MIN
 
-                if velocity_ok and altitude_ok and angle_ok:
-                    print(f"\n🎯 ЦЕЛЕВЫЕ ПАРАМЕТРЫ ДОСТИГНУТЫ!")
+                if velocity_ok and altitude_ok and angle_ok and attack_ok:
+                    print(f"\n🎯 ВСЕ ЦЕЛЕВЫЕ ПАРАМЕТРЫ ДОСТИГНУТЫ!")
                     update_rocket_json(coefs.tolist() if hasattr(coefs, 'tolist') else coefs)
                 else:
-                    print(f"\n⚠️  Целевые параметры не достигнуты. Необходима дальнейшая оптимизация.")
+                    print(f"\n⚠️  Не все целевые параметры достигнуты. Необходима дальнейшая оптимизация.")
             
             output(parser)
         
@@ -636,6 +713,9 @@ class ballistics:
 
             # Записываем данные для вывода
             attack_list.append(self.attack*180/math.pi)
+            vel_list.append(self.vel)
+            traj_list.append(self.Y*180/math.pi)
+            alt_list.append(self.alt)
             time_list.append(time)
             wind_list.append(self.wind)
             Cbs_list.append(self.thrust*self.parser.thrust_ratio/self.mass)
@@ -714,6 +794,7 @@ def main():
     print(f"- Скорость > {TARGET_VELOCITY} м/с (первая космическая)")
     print(f"- Высота: {TARGET_ALTITUDE_MIN/1000}-{TARGET_ALTITUDE_MAX/1000} км")
     print(f"- Угол наклона траектории: 0±{TARGET_ANGLE_RANGE}°")
+    print(f"- Финальный угол атаки: > {TARGET_FINAL_ATTACK_MIN}°")
     print("=" * 60)
     print(f"Диапазоны коэффициентов:")
     print(f"- coef1: {COEF1_RANGE[0]} - {COEF1_RANGE[1]}")
@@ -732,3 +813,41 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+    # Графики для визуализации результатов
+    plt.figure(figsize=(15, 10))
+    
+    plt.subplot(2, 2, 1)
+    plt.plot(time_list, attack_list, label='Угол атаки α(t)', color='red')
+    plt.xlabel('Время, с')
+    plt.ylabel('Угол атаки, градусы')
+    plt.title('Угол атаки по времени')
+    plt.legend()
+    plt.grid(True)
+    
+    plt.subplot(2, 2, 2)
+    plt.plot(time_list, alt_list, label='Высота h(t)', color='blue')
+    plt.xlabel('Время, с')
+    plt.ylabel('Высота, м')
+    plt.title('Высота по времени')
+    plt.legend()
+    plt.grid(True)
+    
+    plt.subplot(2, 2, 3)
+    plt.plot(time_list, vel_list, label='Скорость v(t)', color='green')
+    plt.xlabel('Время, с')
+    plt.ylabel('Скорость, м/с')
+    plt.title('Скорость по времени')
+    plt.legend()
+    plt.grid(True)
+    
+    plt.subplot(2, 2, 4)
+    plt.plot(time_list, traj_list, label='Угол траектории θ(t)', color='purple')
+    plt.xlabel('Время, с')
+    plt.ylabel('Угол траектории, градусы')
+    plt.title('Угол траектории по времени')
+    plt.legend()
+    plt.grid(True)
+    
+    plt.tight_layout()
+    plt.show()

@@ -72,11 +72,11 @@
       ]
     ]
   },
-  "integration_step": 1,
+  "integration_step": 2,
   "fuel": "RG_1",
   "oxidizer": "LOX",
   "attack_coefs": [
-    4.18,
-    0.25
+    4.359966669040212,
+    0.47113572579870633
   ]
 }
